@@ -20,7 +20,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/adminApi";
 import { useAdminStore } from "@/store/adminStore";
 
 interface RecentSignup {
@@ -67,7 +67,7 @@ export default function AdminDashboardPage() {
   const admin = useAdminStore((s) => s.admin);
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "overview"],
-    queryFn: async () => (await api.get<Overview>("/api/admin/stats/overview")).data,
+    queryFn: async () => (await adminApi.get<Overview>("/api/admin/stats/overview")).data,
   });
 
   const verifiedPct =

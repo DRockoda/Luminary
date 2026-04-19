@@ -67,22 +67,29 @@ export const env = {
     process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:3000/api/drive/callback",
   CORS_ORIGIN: process.env.CORS_ORIGIN ?? "http://localhost:5173",
   /**
-   * Use `none` when the SPA is on a different host than the API (e.g. Netlify → Vercel)
-   * so browsers send cookies on credentialed XHR. Requires `Secure` (enabled in production).
+   * Use `none` when the SPA is on a different host than the API (Netlify + Render, etc.)
+   * so browsers send cookies on credentialed XHR. Requires `Secure` (see `cookies.ts`).
+   * In production, defaults to `none` if unset; override with COOKIE_SAMESITE=strict for same-site deploys.
    */
   COOKIE_SAMESITE: ((): "strict" | "lax" | "none" => {
-    const v = (process.env.COOKIE_SAMESITE ?? "strict").toLowerCase();
-    if (v === "lax" || v === "none" || v === "strict") return v;
+    const raw = process.env.COOKIE_SAMESITE?.trim();
+    if (raw) {
+      const v = raw.toLowerCase();
+      if (v === "lax" || v === "none" || v === "strict") return v;
+    }
+    const nodeEnv = process.env.NODE_ENV ?? "development";
+    if (nodeEnv === "production") return "none";
     return "strict";
   })(),
   /**
    * Set-Cookie `Domain`. Empty omits the attribute (host-only cookies on the API host).
-   * On Vercel, defaulting to `localhost` breaks cookie scoping; unset → "" when VERCEL is set.
+   * On serverless / PaaS, omit so cookies bind to the API hostname (required for cross-origin SPAs).
    */
   COOKIE_DOMAIN: ((): string => {
     const raw = process.env.COOKIE_DOMAIN?.trim();
     if (raw) return raw;
-    return process.env.VERCEL ? "" : "localhost";
+    if (process.env.VERCEL || process.env.RENDER) return "";
+    return "localhost";
   })(),
   /** Writable media root; created on startup (see `resolveUploadDir`). */
   UPLOAD_DIR: resolveUploadDir(),
@@ -97,3 +104,13 @@ export const env = {
 };
 
 export const isProd = env.NODE_ENV === "production";
+
+/** Log once at startup — helps verify Render env for Netlify + API split hosting. */
+export function logCrossOriginRuntimeConfig(): void {
+  // eslint-disable-next-line no-console
+  console.log(
+    `[luminary-api] NODE_ENV=${env.NODE_ENV} COOKIE_SAMESITE=${env.COOKIE_SAMESITE} COOKIE_DOMAIN=${env.COOKIE_DOMAIN || "(host-only)"}`,
+  );
+  // eslint-disable-next-line no-console
+  console.log(`[luminary-api] CORS_ORIGIN=${env.CORS_ORIGIN} APP_URL=${env.APP_URL}`);
+}

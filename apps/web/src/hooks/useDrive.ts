@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, apiErrorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
@@ -19,7 +20,23 @@ export function useDrive(options?: { statusEnabled?: boolean }) {
 
   const statusQuery = useQuery({
     queryKey: ["drive", "status"],
-    queryFn: async () => (await api.get<DriveStatus>("/api/drive/status")).data,
+    queryFn: async () => {
+      try {
+        return (await api.get<DriveStatus>("/api/drive/status")).data;
+      } catch (e) {
+        // Cross-origin cookie issues often surface as 401 here; avoid a scary error UI.
+        if (axios.isAxiosError(e) && e.response?.status === 401) {
+          return {
+            connected: false,
+            configured: true,
+            email: null,
+            syncMode: "on-save",
+            lastSyncedAt: null,
+          } satisfies DriveStatus;
+        }
+        throw e;
+      }
+    },
     enabled: statusEnabled,
   });
 

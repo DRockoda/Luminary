@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
-import { api, apiErrorMessage } from "@/lib/api";
+import { adminApi } from "@/lib/adminApi";
+import { apiErrorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 
 type Color = "info" | "success" | "warning" | "danger" | "accent";
@@ -30,7 +31,7 @@ export default function AdminAnnouncementsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "announcements"],
     queryFn: async () =>
-      (await api.get<{ announcements: Announcement[] }>("/api/admin/announcements")).data
+      (await adminApi.get<{ announcements: Announcement[] }>("/api/admin/announcements")).data
         .announcements,
   });
 
@@ -41,8 +42,8 @@ export default function AdminAnnouncementsPage() {
 
   const enableMaintenance = useMutation({
     mutationFn: async () => {
-      await api.patch("/api/admin/announcements/deactivate-all");
-      await api.post("/api/admin/announcements", {
+      await adminApi.patch("/api/admin/announcements/deactivate-all");
+      await adminApi.post("/api/admin/announcements", {
         message: "We are currently performing maintenance. We will be back shortly.",
         color: "warning",
         isMaintenance: true,
@@ -58,7 +59,7 @@ export default function AdminAnnouncementsPage() {
 
   const disableMaintenance = useMutation({
     mutationFn: async () => {
-      await api.patch("/api/admin/announcements/disable-maintenance");
+      await adminApi.patch("/api/admin/announcements/disable-maintenance");
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "announcements"] });
@@ -73,7 +74,7 @@ export default function AdminAnnouncementsPage() {
       const expiresIso = expiresAt
         ? new Date(expiresAt).toISOString()
         : "";
-      await api.post("/api/admin/announcements", {
+      await adminApi.post("/api/admin/announcements", {
         message,
         link: link || undefined,
         linkLabel: linkLabel || undefined,
@@ -95,7 +96,7 @@ export default function AdminAnnouncementsPage() {
 
   const toggle = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      await api.patch(`/api/admin/announcements/${id}`, { isActive });
+      await adminApi.patch(`/api/admin/announcements/${id}`, { isActive });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "announcements"] });
@@ -105,7 +106,7 @@ export default function AdminAnnouncementsPage() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/api/admin/announcements/${id}`);
+      await adminApi.delete(`/api/admin/announcements/${id}`);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "announcements"] });

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/adminApi";
 
 interface FeedbackItem {
   id: string;
@@ -22,7 +22,7 @@ export default function AdminFeedbackPage() {
     queryKey: ["admin", "feedback", q],
     queryFn: async () =>
       (
-        await api.get<{ feedback: FeedbackItem[] }>("/api/admin/feedback", {
+        await adminApi.get<{ feedback: FeedbackItem[] }>("/api/admin/feedback", {
           params: q ? { q } : {},
         })
       ).data.feedback,
@@ -30,14 +30,14 @@ export default function AdminFeedbackPage() {
 
   const toggle = useMutation({
     mutationFn: async ({ id, isResolved }: { id: string; isResolved: boolean }) => {
-      await api.patch(`/api/admin/feedback/${id}`, { isResolved });
+      await adminApi.patch(`/api/admin/feedback/${id}`, { isResolved });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "feedback"] }),
   });
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/api/admin/feedback/${id}`);
+      await adminApi.delete(`/api/admin/feedback/${id}`);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "feedback"] });

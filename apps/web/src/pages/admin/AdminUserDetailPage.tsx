@@ -13,7 +13,8 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
-import { api, apiErrorMessage } from "@/lib/api";
+import { adminApi } from "@/lib/adminApi";
+import { apiErrorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 
 interface UserDetail {
@@ -60,7 +61,7 @@ export default function AdminUserDetailPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "user", id],
-    queryFn: async () => (await api.get<UserDetail>(`/api/admin/users/${id}`)).data,
+    queryFn: async () => (await adminApi.get<UserDetail>(`/api/admin/users/${id}`)).data,
     enabled: !!id,
   });
 
@@ -71,7 +72,7 @@ export default function AdminUserDetailPage() {
 
   const addWarning = useMutation({
     mutationFn: async () => {
-      await api.post(`/api/admin/users/${id}/warnings`, {
+      await adminApi.post(`/api/admin/users/${id}/warnings`, {
         message: warnMessage,
         level: warnLevel,
       });
@@ -86,14 +87,14 @@ export default function AdminUserDetailPage() {
 
   const removeWarning = useMutation({
     mutationFn: async (wid: string) => {
-      await api.delete(`/api/admin/warnings/${wid}`);
+      await adminApi.delete(`/api/admin/warnings/${wid}`);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "user", id] }),
   });
 
   const deleteUser = useMutation({
     mutationFn: async () => {
-      await api.delete(`/api/admin/users/${id}`, { data: { confirmEmail } });
+      await adminApi.delete(`/api/admin/users/${id}`, { data: { confirmEmail } });
     },
     onSuccess: () => {
       toast.success("Account deleted");
@@ -104,7 +105,7 @@ export default function AdminUserDetailPage() {
 
   const toggleVerified = useMutation({
     mutationFn: async (next: boolean) => {
-      await api.patch(`/api/admin/users/${id}/verify`, { emailVerified: next });
+      await adminApi.patch(`/api/admin/users/${id}/verify`, { emailVerified: next });
     },
     onSuccess: (_d, next) => {
       qc.invalidateQueries({ queryKey: ["admin", "user", id] });

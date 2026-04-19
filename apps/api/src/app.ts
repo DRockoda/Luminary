@@ -3,7 +3,8 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import path from "node:path";
-import { env } from "./env.js";
+import type { CorsOptions } from "cors";
+import { env, isProd } from "./env.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.js";
 import adminRouter from "./routes/admin.js";
 import announcementsRouter from "./routes/announcements.js";
@@ -30,15 +31,46 @@ app.use(
   }),
 );
 
-app.use(
-  cors({
-    origin: (() => {
-      const origins = env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean);
-      return origins.length ? origins : ["http://localhost:5173"];
-    })(),
-    credentials: true,
-  }),
-);
+/** Origins allowed to call this API with credentials (cookies). */
+function collectAllowedCorsOrigins(): Set<string> {
+  const set = new Set<string>();
+  for (const o of [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+  ]) {
+    set.add(o);
+  }
+  for (const part of env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean)) {
+    set.add(part.replace(/\/$/, ""));
+  }
+  const appUrl = env.APP_URL?.trim().replace(/\/$/, "");
+  if (appUrl) set.add(appUrl);
+  return set;
+}
+
+const allowedCorsOrigins = collectAllowedCorsOrigins();
+
+const corsOptions: CorsOptions = {
+  origin(origin, callback) {
+    // Non-browser clients (health checks, curl) send no Origin.
+    if (!origin) return callback(null, true);
+    if (allowedCorsOrigins.has(origin)) return callback(null, true);
+    if (isProd) {
+      // eslint-disable-next-line no-console
+      console.warn(`[cors] blocked Origin: ${origin}`);
+    }
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());

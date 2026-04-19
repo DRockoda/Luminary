@@ -9,18 +9,19 @@ export function DriveConnectBanner() {
   const [searchParams] = useSearchParams();
   const tab = searchParams.get("tab");
 
-  const { status, connect, connectPending, connectDisabled } = useDrive({
-    statusEnabled: Boolean(user),
-  });
+  const { status, statusLoading, isStatusError, connect, connectPending, connectDisabled } =
+    useDrive({
+      statusEnabled: Boolean(user),
+    });
 
   const hidden = useMemo(() => {
-    if (!status) return true;
-    if (status.connected) return true;
+    if (statusLoading) return true;
+    if (status?.connected) return true;
     // Already on the storage tab — the storage panel itself surfaces the
     // connect CTA, no need for a duplicate banner.
     if (tab === "storage") return true;
     return false;
-  }, [status, tab]);
+  }, [status, tab, statusLoading]);
 
   if (hidden) return null;
 
@@ -34,9 +35,11 @@ export function DriveConnectBanner() {
           Back up your data with Google Drive
         </p>
         <p className="drive-connect-banner-description">
-          {status?.configured
-            ? "Connect your Google Drive to sync entries so nothing is ever lost. Files stay in a private app-only folder."
-            : "Drive integration isn't configured on this server yet. Once your admin sets it up, you'll be able to back up entries here."}
+          {isStatusError
+            ? "We couldn't verify Drive status from the server. You can still try connecting — if sign-in fails, refresh after checking cookies / CORS on the API."
+            : status?.configured
+              ? "Connect your Google Drive to sync entries so nothing is ever lost. Files stay in a private app-only folder."
+              : "Drive integration isn't configured on this server yet. Once your admin sets it up, you'll be able to back up entries here."}
         </p>
       </div>
       <button

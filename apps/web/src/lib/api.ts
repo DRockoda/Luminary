@@ -4,6 +4,9 @@ import { resolveApiBaseURL } from "./apiBaseUrl";
 export const api = axios.create({
   baseURL: resolveApiBaseURL(),
   withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 let refreshing: Promise<void> | null = null;
@@ -30,6 +33,14 @@ api.interceptors.response.use(
         return api.request(original);
       } catch (e) {
         refreshing = null;
+        if (typeof window !== "undefined") {
+          const path = window.location.pathname;
+          if (path.startsWith("/admin")) {
+            window.location.assign("/admin");
+          } else if (!path.startsWith("/auth")) {
+            window.location.assign("/auth");
+          }
+        }
         return Promise.reject(e);
       }
     }

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/adminApi";
 
 export interface AdminUser {
   id: string;
@@ -19,7 +19,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   initialized: false,
   bootstrap: async () => {
     try {
-      const { data } = await api.get<{ admin: AdminUser }>("/api/admin/me");
+      const { data } = await adminApi.get<{ admin: AdminUser }>("/api/admin/me");
       set({ admin: data.admin });
     } catch {
       set({ admin: null });
@@ -28,7 +28,7 @@ export const useAdminStore = create<AdminState>((set) => ({
     }
   },
   login: async (username, password) => {
-    const { data } = await api.post<{ admin: AdminUser }>("/api/admin/login", {
+    const { data } = await adminApi.post<{ admin: AdminUser }>("/api/admin/login", {
       username,
       password,
     });
@@ -36,7 +36,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
   logout: async () => {
     try {
-      await api.post("/api/admin/logout");
+      await adminApi.post("/api/admin/logout");
     } finally {
       set({ admin: null });
     }

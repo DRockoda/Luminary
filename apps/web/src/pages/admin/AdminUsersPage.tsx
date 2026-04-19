@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Search, Users } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
-import { api, apiErrorMessage } from "@/lib/api";
+import { adminApi } from "@/lib/adminApi";
+import { apiErrorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 
 interface AdminUserRow {
@@ -47,7 +48,7 @@ export default function AdminUsersPage() {
     queryKey: ["admin", "users", q],
     queryFn: async () =>
       (
-        await api.get<{ users: AdminUserRow[] }>("/api/admin/users", {
+        await adminApi.get<{ users: AdminUserRow[] }>("/api/admin/users", {
           params: q ? { q } : {},
         })
       ).data.users,
@@ -55,7 +56,7 @@ export default function AdminUsersPage() {
 
   const toggleVerified = useMutation({
     mutationFn: async (vars: { id: string; next: boolean }) => {
-      await api.patch(`/api/admin/users/${vars.id}/verify`, {
+      await adminApi.patch(`/api/admin/users/${vars.id}/verify`, {
         emailVerified: vars.next,
       });
     },
@@ -139,7 +140,17 @@ export default function AdminUsersPage() {
             {!isLoading && (data ?? []).length === 0 && (
               <tr>
                 <td colSpan={7} className="admin-table-empty">
-                  No users found.
+                  <div className="flex flex-col items-center gap-2 py-6 text-center">
+                    <Users className="h-8 w-8 text-tertiary" strokeWidth={1.5} aria-hidden />
+                    <p className="font-medium text-primary">
+                      {q.trim() ? "No users match your search" : "No users yet"}
+                    </p>
+                    <p className="text-sm text-tertiary max-w-sm">
+                      {q.trim()
+                        ? "Try a different email or display name."
+                        : "Accounts will appear here after people sign up on the app."}
+                    </p>
+                  </div>
                 </td>
               </tr>
             )}
