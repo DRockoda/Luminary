@@ -64,8 +64,9 @@ export default function App() {
   }, [bootstrap]);
 
   useEffect(() => {
+    if (isAdminRoute) return;
     if (user?.theme) applyColorTheme(user.theme);
-  }, [user?.theme]);
+  }, [user?.theme, isAdminRoute]);
 
   if (!isAdminRoute && maintenanceLoading) {
     return <PageLoader />;

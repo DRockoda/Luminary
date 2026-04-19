@@ -12,7 +12,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
 
   if (!initialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-secondary">
+      <div className="admin-theme min-h-screen flex items-center justify-center bg-app text-secondary">
         <Spinner className="h-6 w-6" />
       </div>
     );

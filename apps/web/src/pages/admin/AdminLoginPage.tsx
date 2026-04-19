@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="admin-login-page">
+    <div className="admin-theme admin-login-page">
       <div className="admin-login-card">
         <div className="admin-login-icon">
           <Lock className="h-5 w-5" strokeWidth={2} />

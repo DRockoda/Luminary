@@ -28,7 +28,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const initial = (admin?.username ?? "A").slice(0, 1).toUpperCase();
 
   return (
-    <div className="admin-shell">
+    <div className="admin-theme admin-shell">
       <div className="admin-layout">
         <aside className="admin-sidebar">
           <div className="admin-sidebar-brand">

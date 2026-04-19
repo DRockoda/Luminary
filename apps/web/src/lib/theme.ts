@@ -3,6 +3,11 @@ import { THEMES, type ThemeKey, isThemeKey } from "@luminary/shared";
 const COLOR_KEY = "luminary_theme";
 const FONT_KEY = "luminary-font-size";
 
+function isAdminPath(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.pathname.startsWith("/admin");
+}
+
 export function getStoredColorTheme(): ThemeKey {
   try {
     const v = localStorage.getItem(COLOR_KEY);
@@ -14,6 +19,7 @@ export function getStoredColorTheme(): ThemeKey {
 }
 
 export function applyColorTheme(themeKey: ThemeKey) {
+  if (isAdminPath()) return;
   const t = THEMES[themeKey];
   const root = document.documentElement;
   root.style.setProperty("--accent", t.accent);
@@ -50,5 +56,7 @@ export function applyFontSize(size: "small" | "medium" | "large") {
 
 export function initTheme() {
   applyFontSize(getStoredFontSize());
-  applyColorTheme(getStoredColorTheme());
+  if (!isAdminPath()) {
+    applyColorTheme(getStoredColorTheme());
+  }
 }
