@@ -1,9 +1,44 @@
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
+
+/** Prisma `schema.prisma` requires `DIRECT_URL`; many hosts only set `DATABASE_URL`. */
+if (!process.env.DIRECT_URL?.trim() && process.env.DATABASE_URL?.trim()) {
+  process.env.DIRECT_URL = process.env.DATABASE_URL;
+}
 
 function required(name: string, fallback?: string): string {
   const value = process.env[name] ?? fallback;
-  if (!value) throw new Error(`Missing required env var: ${name}`);
+  if (!value) {
+    throw new Error(
+      `Missing required env var: ${name}. Set it in Vercel → Project → Settings → Environment Variables (or apps/api/.env locally).`,
+    );
+  }
   return value;
+}
+
+/**
+ * Ensure upload root exists at process startup (before route modules mkdir avatars, etc.).
+ * On Vercel, fall back to `/tmp/uploads` if the configured path is not writable.
+ */
+function resolveUploadDir(): string {
+  let dir =
+    process.env.UPLOAD_DIR?.trim() ||
+    (process.env.VERCEL ? "/tmp/uploads" : "./uploads");
+  const resolved = path.resolve(dir);
+  try {
+    fs.mkdirSync(resolved, { recursive: true });
+    return dir;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(`[env] UPLOAD_DIR mkdir failed (${resolved}):`, err);
+    if (process.env.VERCEL && dir !== "/tmp/uploads") {
+      dir = "/tmp/uploads";
+      fs.mkdirSync(dir, { recursive: true });
+      return dir;
+    }
+    throw err;
+  }
 }
 
 export const env = {
@@ -35,16 +70,9 @@ export const env = {
     if (v === "lax" || v === "none" || v === "strict") return v;
     return "strict";
   })(),
-  COOKIE_DOMAIN: process.env.COOKIE_DOMAIN ?? "localhost",
-  /**
-   * Vercel serverless allows writes only under `/tmp`. Creating `./uploads` at
-   * app import time throws (EACCES / EROFS) and breaks every route with 500.
-   */
-  UPLOAD_DIR: process.env.UPLOAD_DIR
-    ? process.env.UPLOAD_DIR
-    : process.env.VERCEL
-      ? "/tmp/uploads"
-      : "./uploads",
+  COOKIE_DOMAIN: (process.env.COOKIE_DOMAIN ?? "localhost").trim() || "localhost",
+  /** Writable media root; created on startup (see `resolveUploadDir`). */
+  UPLOAD_DIR: resolveUploadDir(),
   ADMIN_JWT_SECRET: required(
     "ADMIN_JWT_SECRET",
     "dev_admin_jwt_secret_change_me_aaaabbbbccccddddeeeeffff111122223333",

@@ -14,7 +14,12 @@ const router = Router();
 router.use(requireAuth);
 
 const avatarDir = path.join(env.UPLOAD_DIR, "avatars");
-fs.mkdirSync(avatarDir, { recursive: true });
+try {
+  fs.mkdirSync(avatarDir, { recursive: true });
+} catch (e) {
+  // eslint-disable-next-line no-console
+  console.error("[user] avatar dir mkdir failed:", avatarDir, e);
+}
 
 const avatarUpload = multer({
   storage: multer.diskStorage({

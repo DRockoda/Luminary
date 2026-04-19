@@ -22,8 +22,6 @@ import {
 
 const router = Router();
 
-fs.mkdirSync(env.UPLOAD_DIR, { recursive: true });
-
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, env.UPLOAD_DIR),

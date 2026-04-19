@@ -1,7 +1,6 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
-import fs from "node:fs";
 import helmet from "helmet";
 import path from "node:path";
 import { env } from "./env.js";
@@ -33,7 +32,10 @@ app.use(
 
 app.use(
   cors({
-    origin: env.CORS_ORIGIN.split(",").map((s) => s.trim()),
+    origin: (() => {
+      const origins = env.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean);
+      return origins.length ? origins : ["http://localhost:5173"];
+    })(),
     credentials: true,
   }),
 );
@@ -41,7 +43,7 @@ app.use(
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 
-fs.mkdirSync(env.UPLOAD_DIR, { recursive: true });
+// Upload dir is created in `env.ts` (`resolveUploadDir`) so route modules never mkdir before it exists.
 app.use("/uploads", express.static(path.resolve(env.UPLOAD_DIR)));
 
 app.get("/health", (_req, res) => {
