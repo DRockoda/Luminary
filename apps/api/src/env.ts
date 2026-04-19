@@ -1,6 +1,11 @@
-import "dotenv/config";
+import { config as loadEnvFile } from "dotenv";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+/** Resolve `apps/api/.env` from this file (`src/` or `dist/`), not `process.cwd()` (fixes local 500s when the API is started from the monorepo root). */
+const apiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+loadEnvFile({ path: path.join(apiRoot, ".env") });
 
 /** Prisma `schema.prisma` requires `DIRECT_URL`; many hosts only set `DATABASE_URL`. */
 if (!process.env.DIRECT_URL?.trim() && process.env.DATABASE_URL?.trim()) {
@@ -70,7 +75,15 @@ export const env = {
     if (v === "lax" || v === "none" || v === "strict") return v;
     return "strict";
   })(),
-  COOKIE_DOMAIN: (process.env.COOKIE_DOMAIN ?? "localhost").trim() || "localhost",
+  /**
+   * Set-Cookie `Domain`. Empty omits the attribute (host-only cookies on the API host).
+   * On Vercel, defaulting to `localhost` breaks cookie scoping; unset → "" when VERCEL is set.
+   */
+  COOKIE_DOMAIN: ((): string => {
+    const raw = process.env.COOKIE_DOMAIN?.trim();
+    if (raw) return raw;
+    return process.env.VERCEL ? "" : "localhost";
+  })(),
   /** Writable media root; created on startup (see `resolveUploadDir`). */
   UPLOAD_DIR: resolveUploadDir(),
   ADMIN_JWT_SECRET: required(
