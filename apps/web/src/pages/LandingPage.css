@@ -8,6 +8,14 @@
   overflow-x: hidden;
 }
 
+/* Sticky nav (~64px) — anchor targets land below the bar */
+#features,
+#how-it-works,
+#testimonials,
+#faq {
+  scroll-margin-top: 76px;
+}
+
 .landing-container {
   max-width: 1180px;
   margin: 0 auto;

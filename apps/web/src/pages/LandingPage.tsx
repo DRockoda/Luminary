@@ -151,6 +151,35 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /** In-page #anchors: smooth scroll + offset for sticky nav (respects reduced motion). */
+  useEffect(() => {
+    const root = document.querySelector(".landing-page");
+    if (!root) return;
+
+    const reduceMotion = () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const onClick = (e: Event) => {
+      const target = (e as MouseEvent).target as HTMLElement | null;
+      const a = target?.closest?.("a");
+      if (!a || !root.contains(a)) return;
+      const href = a.getAttribute("href");
+      if (!href || !href.startsWith("#") || href === "#") return;
+      const id = href.slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({
+        behavior: reduceMotion() ? "auto" : "smooth",
+        block: "start",
+      });
+    };
+
+    root.addEventListener("click", onClick);
+    return () => root.removeEventListener("click", onClick);
+  }, []);
+
   useEffect(() => {
     const t = window.setInterval(() => {
       setAccentIndex((i) => (i + 1) % ROTATING_WORDS.length);

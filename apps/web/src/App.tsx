@@ -7,6 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { HotToaster } from "@/components/ui/hot-toaster";
 import { PageLoader } from "@/components/layout/PageLoader";
+import { PublicPageTransition } from "@/components/layout/PublicPageTransition";
 import { PageTransitionOutlet } from "@/components/layout/PageTransitionOutlet";
 import { applyColorTheme } from "@/lib/theme";
 import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
@@ -77,12 +78,13 @@ export default function App() {
     <>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
-          <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+          <Route element={<PublicPageTransition />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+          </Route>
 
           <Route path="/admin" element={<AdminLoginPage />} />
           <Route element={<AdminLayout />}>
