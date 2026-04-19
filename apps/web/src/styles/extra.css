@@ -435,12 +435,103 @@
   display: flex;
   flex-direction: column;
 }
+
+.admin-top-header {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  flex-shrink: 0;
+  background: #1e293b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.admin-menu-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 150ms ease;
+}
+.admin-menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.admin-top-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.admin-top-warn {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fbbf24;
+}
+.admin-top-brand-name {
+  color: #f8fafc;
+}
+.admin-top-header-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+.admin-top-header-user {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+.admin-top-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 150ms ease;
+}
+.admin-top-logout:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.admin-top-logout-label {
+  display: inline;
+}
+.admin-sidebar-backdrop {
+  display: none;
+}
+
 .admin-layout {
   display: grid;
   grid-template-columns: 240px 1fr;
   flex: 1;
   min-height: 0;
   align-items: stretch;
+  position: relative;
 }
 .admin-sidebar {
   position: sticky;
@@ -600,24 +691,104 @@
   padding: 32px 36px 64px;
 }
 @media (max-width: 768px) {
-  .admin-layout { grid-template-columns: 1fr; }
+  .admin-top-header {
+    display: flex;
+  }
+  .admin-menu-toggle {
+    display: inline-flex;
+  }
+  .admin-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: 56px;
+    z-index: 45;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    background: rgba(15, 23, 42, 0.45);
+    animation: adminBackdropIn 180ms ease;
+  }
+  @keyframes adminBackdropIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
   .admin-sidebar {
-    position: static;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 88vw);
     height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border-default);
-    padding: 12px;
-    flex-direction: column;
+    max-height: none;
+    z-index: 46;
+    transform: translateX(-102%);
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: none;
+    padding: 16px 12px 20px;
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.18);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .admin-theme .admin-sidebar {
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+    background: #1e293b;
   }
-  .admin-sidebar-brand { padding-bottom: 12px; margin-bottom: 8px; }
-  .admin-sidebar-nav { flex-direction: row; overflow-x: auto; gap: 4px; }
-  .admin-sidebar-link { white-space: nowrap; height: 34px; }
-  .admin-sidebar-link-bar { display: none; }
-  .admin-sidebar-footer { display: none; }
-  .admin-content-inner { padding: 20px 16px 48px; }
+  .admin-sidebar.is-open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  .admin-sidebar:not(.is-open) {
+    pointer-events: none;
+  }
+
+  .admin-sidebar-brand {
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+  }
+  .admin-sidebar-nav {
+    flex-direction: column;
+    overflow: visible;
+    gap: 2px;
+    flex: 1;
+  }
+  .admin-sidebar-link {
+    white-space: nowrap;
+    height: 38px;
+  }
+  .admin-sidebar-link-bar {
+    display: block;
+  }
+  .admin-sidebar-footer {
+    display: flex;
+  }
+
+  .admin-content-inner {
+    padding: 20px 16px 48px;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-top-header-user {
+    display: none;
+  }
+  .admin-top-logout-label {
+    display: none;
+  }
+  .admin-top-logout {
+    padding: 0 10px;
+    min-width: 44px;
+  }
 }
 
 /* ─────────── Admin dashboard hero ─────────── */

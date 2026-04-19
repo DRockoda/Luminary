@@ -2,9 +2,12 @@ import {
   BarChart3,
   LogOut,
   Megaphone,
+  Menu,
   MessageSquare,
   Users,
+  X,
 } from "lucide-react";
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAdminStore } from "@/store/adminStore";
@@ -19,6 +22,7 @@ const NAV = [
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const { admin, logout } = useAdminStore();
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   async function onLogout() {
     await logout();
@@ -29,8 +33,48 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="admin-theme admin-shell">
+      <header className="admin-top-header">
+        <button
+          type="button"
+          className="admin-menu-toggle"
+          onClick={() => setSidebarOpen((o) => !o)}
+          aria-expanded={sidebarOpen}
+          aria-label={sidebarOpen ? "Close navigation" : "Open navigation"}
+        >
+          {sidebarOpen ? <X className="h-4 w-4" strokeWidth={2} /> : <Menu className="h-4 w-4" strokeWidth={2} />}
+        </button>
+        <div className="admin-top-header-brand">
+          <span className="admin-top-warn" aria-hidden>
+            ADMIN
+          </span>
+          <span className="admin-top-brand-name">Luminary</span>
+        </div>
+        <span className="admin-top-header-spacer" aria-hidden />
+        <span className="admin-top-header-user" title={admin?.username ?? undefined}>
+          {admin?.username ?? "Admin"}
+        </span>
+        <button
+          type="button"
+          onClick={() => void onLogout()}
+          className="admin-top-logout"
+          aria-label="Sign out"
+        >
+          <LogOut className="h-[15px] w-[15px] shrink-0" strokeWidth={1.75} />
+          <span className="admin-top-logout-label">Sign out</span>
+        </button>
+      </header>
+
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="admin-sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <div className="admin-layout">
-        <aside className="admin-sidebar">
+        <aside className={cn("admin-sidebar", sidebarOpen && "is-open")}>
           <div className="admin-sidebar-brand">
             <div className="admin-sidebar-mark">L</div>
             <div className="admin-sidebar-brand-text">
@@ -44,6 +88,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   cn("admin-sidebar-link", isActive && "is-active")
                 }
@@ -69,7 +114,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
             <button
               type="button"
-              onClick={onLogout}
+              onClick={() => void onLogout()}
               className="admin-sidebar-logout"
               aria-label="Sign out"
             >

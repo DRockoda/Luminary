@@ -6,8 +6,10 @@ import App from "./App";
 import "./index.css";
 import "./styles/extra.css";
 import "./styles/polish.css";
+import { initPwaInstallCapture } from "./lib/pwaDeferredInstall";
 import { initTheme } from "./lib/theme";
 
+initPwaInstallCapture();
 initTheme();
 
 const queryClient = new QueryClient({

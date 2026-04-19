@@ -1,11 +1,12 @@
-import { Download, Smartphone } from "lucide-react";
+import { Download, Smartphone, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "@/lib/toast";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+import { cn } from "@/lib/utils";
+import {
+  type BeforeInstallPromptEventLike,
+  getDeferredInstallPrompt,
+  clearDeferredInstallPrompt,
+  PWA_INSTALLABLE_EVENT,
+} from "@/lib/pwaDeferredInstall";
 
 function isStandaloneMode(): boolean {
   if (typeof window === "undefined") return false;
@@ -13,34 +14,72 @@ function isStandaloneMode(): boolean {
   return Boolean((window.navigator as unknown as { standalone?: boolean }).standalone);
 }
 
-function isIosSafari(): boolean {
+function isIosDevice(): boolean {
   if (typeof window === "undefined") return false;
   const ua = window.navigator.userAgent;
   return /iPad|iPhone|iPod/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
 }
 
-function IOSInstructions({ onClose }: { onClose: () => void }) {
+function InstallInstructions({
+  isIOS,
+  onClose,
+}: {
+  isIOS: boolean;
+  onClose: () => void;
+}) {
   return (
-    <div className="ios-instructions-overlay" onClick={onClose} role="presentation">
+    <div
+      className="install-instructions-overlay"
+      onClick={onClose}
+      role="presentation"
+    >
       <div
-        className="ios-instructions-card"
+        className="install-instructions-card"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-labelledby="ios-install-title"
+        aria-modal="true"
+        aria-labelledby="install-instructions-title"
       >
-        <h3 id="ios-install-title">Add to Home Screen</h3>
-        <ol>
-          <li>
-            Tap the <strong>Share</strong> button in Safari
-          </li>
-          <li>
-            Scroll down and tap <strong>Add to Home Screen</strong>
-          </li>
-          <li>
-            Tap <strong>Add</strong> in the top right
-          </li>
-        </ol>
-        <button type="button" onClick={onClose} className="landing-btn-primary ios-instructions-got-it">
+        <div className="install-instructions-header">
+          <h3 id="install-instructions-title">Install Luminary</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="install-instructions-close"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+        </div>
+
+        {isIOS ? (
+          <ol className="install-instructions-steps">
+            <li>
+              Tap the <strong>Share</strong> button at the bottom of Safari
+            </li>
+            <li>
+              Scroll down and tap <strong>Add to Home Screen</strong>
+            </li>
+            <li>
+              Tap <strong>Add</strong> in the top right corner
+            </li>
+          </ol>
+        ) : (
+          <ol className="install-instructions-steps">
+            <li>
+              Look for the <strong>install icon</strong> in your browser&apos;s address bar
+            </li>
+            <li>
+              Select <strong>Install</strong> or <strong>Install app</strong>
+            </li>
+            <li>
+              Or open the browser <strong>menu</strong> and choose <strong>Install app</strong>{" "}
+              / <strong>Add to Home screen</strong>
+            </li>
+          </ol>
+        )}
+
+        <button type="button" onClick={onClose} className="btn-primary install-instructions-done">
           Got it
         </button>
       </div>
@@ -49,93 +88,76 @@ function IOSInstructions({ onClose }: { onClose: () => void }) {
 }
 
 export function InstallButton({ variant = "default" }: { variant?: "default" | "hero" | "footer" }) {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isIOS, setIsIOS] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+
+  const refreshPrompt = useCallback(() => {
+    if (getDeferredInstallPrompt()) setCanInstall(true);
+  }, []);
 
   useEffect(() => {
     if (isStandaloneMode()) {
       setIsInstalled(true);
       return;
     }
-    setIsIOS(isIosSafari());
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferred(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+    const ios = isIosDevice();
+    setIsIOS(ios);
+    if (ios) {
+      setCanInstall(true);
+      return;
+    }
+    refreshPrompt();
+    window.addEventListener(PWA_INSTALLABLE_EVENT, refreshPrompt);
+    return () => window.removeEventListener(PWA_INSTALLABLE_EVENT, refreshPrompt);
+  }, [refreshPrompt]);
 
   const handleInstall = useCallback(async () => {
     if (isIOS) {
-      setShowIOSInstructions(true);
+      setShowInstructions(true);
       return;
     }
-    if (!deferred) {
-      toast.info(
-        "Install",
-        "Use your browser’s install option in the address bar when it appears, or try again after browsing a bit.",
-      );
+    const prompt = getDeferredInstallPrompt() as BeforeInstallPromptEventLike | null;
+    if (!prompt) {
+      setShowInstructions(true);
       return;
     }
-    await deferred.prompt();
-    const { outcome } = await deferred.userChoice;
-    if (outcome === "accepted") setIsInstalled(true);
-    setDeferred(null);
-  }, [deferred, isIOS]);
+    try {
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      if (outcome === "accepted") setIsInstalled(true);
+    } catch {
+      setShowInstructions(true);
+    } finally {
+      clearDeferredInstallPrompt();
+      setCanInstall(false);
+    }
+  }, [isIOS]);
 
   if (isInstalled) return null;
+  const alwaysOffer = variant === "hero" || variant === "footer";
+  if (!alwaysOffer && !canInstall && !isIOS) return null;
 
   const label = isIOS ? "Add to Home Screen" : "Install App";
+  const Icon = isIOS ? Smartphone : Download;
 
-  if (variant === "hero") {
-    return (
-      <>
-        <button
-          type="button"
-          onClick={() => void handleInstall()}
-          className="landing-btn-secondary hero-install-btn"
-          aria-label={label}
-        >
-          <Smartphone className="h-4 w-4" strokeWidth={2} />
-          {label}
-        </button>
-        {showIOSInstructions && <IOSInstructions onClose={() => setShowIOSInstructions(false)} />}
-      </>
-    );
-  }
-
-  if (variant === "footer") {
-    return (
-      <>
-        <button
-          type="button"
-          onClick={() => void handleInstall()}
-          className="footer-install-btn"
-          aria-label={label}
-        >
-          <Download className="h-3.5 w-3.5" strokeWidth={2} />
-          {label}
-        </button>
-        {showIOSInstructions && <IOSInstructions onClose={() => setShowIOSInstructions(false)} />}
-      </>
-    );
-  }
+  const btnClass =
+    variant === "hero"
+      ? cn("install-btn install-btn-hero", "landing-btn-secondary hero-install-btn")
+      : variant === "footer"
+        ? cn("install-btn install-btn-footer", "footer-install-btn")
+        : "install-btn install-btn-default";
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => void handleInstall()}
-        className="install-pill-btn"
-        aria-label={label}
-      >
-        <Download className="h-3.5 w-3.5" strokeWidth={2} />
-        {label}
+      <button type="button" onClick={() => void handleInstall()} className={btnClass} aria-label={label}>
+        <Icon className={cn("shrink-0", variant === "footer" ? "h-3.5 w-3.5" : "h-4 w-4")} strokeWidth={2} />
+        <span>{label}</span>
       </button>
-      {showIOSInstructions && <IOSInstructions onClose={() => setShowIOSInstructions(false)} />}
+      {showInstructions && (
+        <InstallInstructions isIOS={isIOS} onClose={() => setShowInstructions(false)} />
+      )}
     </>
   );
 }

@@ -2684,3 +2684,160 @@ body {
   width: 100%;
   justify-content: center;
 }
+
+/* PWA install — shared instructions sheet (iOS + manual Chromium) */
+.install-instructions-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.install-instructions-card {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  border-radius: var(--radius-2xl) var(--radius-2xl) var(--radius-lg) var(--radius-lg);
+  background: var(--bg-elevated);
+  padding: 24px;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-lg);
+  animation: slideUpSheet 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpSheet {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-instructions-card {
+    animation: none;
+  }
+}
+
+.install-instructions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.install-instructions-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.install-instructions-close {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 150ms,
+    color 150ms;
+}
+
+.install-instructions-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.install-instructions-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 20px;
+  padding-left: 20px;
+  color: var(--text-primary);
+}
+
+.install-instructions-steps li {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.install-icon-inline {
+  display: inline-block;
+  margin: 0 2px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--bg-active);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.install-instructions-done {
+  width: 100%;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition:
+    background 150ms,
+    color 150ms,
+    border-color 150ms,
+    transform 100ms;
+  white-space: nowrap;
+  border-radius: var(--radius-md);
+}
+
+.install-btn:active {
+  transform: scale(0.97);
+}
+
+.install-btn-hero {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+.install-btn-footer {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.install-btn-default {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+}
+
+.install-btn-default:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}

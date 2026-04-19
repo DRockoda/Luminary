@@ -977,7 +977,8 @@
   }
   .hero-ctas .landing-btn-primary,
   .hero-ctas .landing-btn-secondary,
-  .hero-ctas .hero-install-btn {
+  .hero-ctas .hero-install-btn,
+  .hero-ctas .install-btn-hero {
     width: 100%;
     max-width: 320px;
     justify-content: center;
