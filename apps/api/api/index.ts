@@ -4,69 +4,42 @@ import serverless from "serverless-http";
 type ServerlessHandler = ReturnType<typeof serverless>;
 
 let handler: ServerlessHandler | undefined;
-let bootError: Error | undefined;
-let bootPromise: Promise<void> | undefined;
 
-function sendJsonError(
-  res: VercelResponse,
-  status: number,
-  body: Record<string, unknown>,
-): void {
-  if (res.headersSent) return;
-  res.status(status);
-  res.setHeader("content-type", "application/json; charset=utf-8");
-  res.end(JSON.stringify(body));
-}
-
-function ensureBoot(): Promise<void> {
-  if (bootPromise) return bootPromise;
-
-  bootPromise = (async () => {
-    try {
-      const { app } = await import("../src/app.js");
-      handler = serverless(app);
-    } catch (e) {
-      bootError = e instanceof Error ? e : new Error(String(e));
-      // eslint-disable-next-line no-console
-      console.error("[luminary-api] bootstrap failed:", bootError);
-    }
-  })();
-
-  return bootPromise;
+async function getHandler(): Promise<ServerlessHandler> {
+  if (!handler) {
+    const { app } = await import("../src/app.js");
+    handler = serverless(app);
+  }
+  return handler;
 }
 
 /**
- * Lazy-load the Express app so a misconfiguration (missing env, mkdir failure, etc.)
- * returns JSON instead of FUNCTION_INVOCATION_FAILED with no body.
+ * Vercel requires a **function** (or Node `Server`) as the default export for this route.
+ * Do not default-export the Express `app` from here or from `app.ts`.
  */
 export default async function vercelHandler(
   req: VercelRequest,
   res: VercelResponse,
-): Promise<void> {
+): Promise<unknown> {
   try {
-    await ensureBoot();
-
-    if (!handler) {
-      sendJsonError(res, 503, {
-        ok: false,
-        code: "SERVICE_BOOTSTRAP_FAILED",
-        message: bootError?.message ?? "Application failed to start.",
-        hint: "Check Vercel env: DATABASE_URL, DIRECT_URL, JWT_SECRET, ENCRYPTION_SERVER_KEY, etc.",
-      });
-      return;
-    }
-
-    await Promise.resolve(handler(req as never, res as never));
-  } catch (e) {
-    const err = e instanceof Error ? e : new Error(String(e));
+    const h = await getHandler();
+    return h(req as never, res as never);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     // eslint-disable-next-line no-console
-    console.error("[luminary-api] request handling error:", err);
+    console.error("[luminary-api] bootstrap or handler error:", err);
     if (!res.headersSent) {
-      sendJsonError(res, 500, {
-        ok: false,
-        code: "INTERNAL",
-        message: err.message,
-      });
+      res.status(503);
+      res.setHeader("content-type", "application/json; charset=utf-8");
+      res.end(
+        JSON.stringify({
+          ok: false,
+          code: "SERVICE_BOOTSTRAP_FAILED",
+          message,
+          hint: "Check Vercel env: DATABASE_URL, DIRECT_URL, JWT_SECRET, ENCRYPTION_SERVER_KEY, etc.",
+        }),
+      );
     }
+    return undefined;
   }
 }
