@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: luminary-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: luminary
+      POSTGRES_PASSWORD: luminary
+      POSTGRES_DB: luminary
+    ports:
+      - "5432:5432"
+    volumes:
+      - luminary_pg_data:/var/lib/postgresql/data
+
+volumes:
+  luminary_pg_data:

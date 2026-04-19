@@ -1,0 +1,81 @@
+﻿# Environment variables — NEVER commit these
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+*.tsbuildinfo
+
+# PWA
+dev-dist/
+sw.js
+workbox-*.js
+
+# Database
+prisma/*.db
+prisma/*.db-journal
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+.turbo/
+.vercel/
+*.tgz
+*.zip
+*.git-commit-msg.txt
+
+# Monorepo / tooling
+.vite/
+packages/shared/dist/
+apps/api/dist/
+apps/web/dist/

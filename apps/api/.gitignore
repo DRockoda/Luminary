@@ -1,0 +1,23 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+
+# Logs
+*.log
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+
+# Upload temp files
+uploads/
+tmp/

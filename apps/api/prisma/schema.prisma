@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  passwordHash        String
+  displayName         String
+  avatarUrl           String?
+  avatarLibraryId     String?
+  theme               String    @default("purple") // accent palette key
+  driveRefreshToken   String?   // server-encrypted before insert
+  driveConnected      Boolean   @default(false)
+  driveEmail          String?   // Google account email when Drive is connected
+  driveSyncMode       String    @default("on-save") // "on-save" | "hourly" | "daily" | "manual"
+  driveLastSyncAt     DateTime?
+  encryptionSalt      String    // for PBKDF2 key derivation (client-side)
+  settings            String    // JSON-encoded UserSettings
+  emailVerified       Boolean   @default(false)
+  emailVerifyToken    String?   @unique
+  emailVerifyExpires  DateTime?
+  emailLastSentAt     DateTime?
+  emailSendCount      Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  entries        Entry[]
+  moodLogs       MoodLog[]
+  warnings       UserWarning[]
+  resetTokens    PasswordResetToken[]
+
+  @@index([email])
+}
+
+model Entry {
+  id              String    @id @default(cuid())
+  userId          String
+  date            String    // "YYYY-MM-DD"
+  type            String    // "audio" | "video" | "text"
+  title           String?
+  content         String?   // AES-256-GCM encrypted (text entries)
+  mediaUrl        String?   // local /uploads path or drive preview
+  driveFileId     String?
+  durationSeconds Int?
+  thumbnailUrl    String?
+  moodScore       Int       @default(5) // 1–10 per-entry mood at save time
+  fileSizeBytes   Int?      // approximate stored size for admin storage stats
+  driveFileSize   Int?      // bytes — cached Drive media size for export estimates
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, createdAt])
+  @@index([userId, deletedAt])
+}
+
+model MoodLog {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // "YYYY-MM-DD"
+  mood      String   // "great" | "good" | "okay" | "low" | "bad"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  revokedAt  DateTime?
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model Announcement {
+  id         String    @id @default(cuid())
+  message    String
+  link       String?
+  linkLabel  String?
+  color      String    // "info" | "success" | "warning" | "danger" | "accent"
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  createdBy  String
+
+  @@index([isActive, createdAt])
+}
+
+model UserWarning {
+  id          String   @id @default(cuid())
+  userId      String
+  message     String
+  level       String   // "info" | "warning" | "danger"
+  isDismissed Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  createdBy   String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isDismissed])
+}
+
+model Feedback {
+  id         String   @id @default(cuid())
+  name       String?
+  email      String
+  message    String
+  isResolved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([isResolved, createdAt])
+}
