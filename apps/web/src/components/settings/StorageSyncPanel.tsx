@@ -1,5 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Shield, Cloud } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Shield, Cloud, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -55,6 +64,7 @@ export function StorageSyncPanel() {
   const setUser = useAuthStore((s) => s.setUser);
   const [searchParams, setSearchParams] = useSearchParams();
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const [confirmClearDrive, setConfirmClearDrive] = useState(false);
 
   const {
     status,
@@ -73,6 +83,8 @@ export function StorageSyncPanel() {
     syncNow,
     syncPending,
     updateSyncMode,
+    clearDriveStorage,
+    clearDriveStoragePending,
   } = useDrive();
 
   const { data: estimate } = useQuery<StorageEstimate>({
@@ -294,6 +306,47 @@ export function StorageSyncPanel() {
         </div>
       </section>
 
+      {/* Clear Drive app-folder (media only; DB entries stay) */}
+      <section className="settings-section">
+        <div className="settings-section-header">
+          <h2 className="settings-section-title">Clear Drive storage</h2>
+        </div>
+        <div className="settings-row settings-row-column gap-3 items-stretch">
+          <p className="text-sm text-secondary leading-relaxed m-0">
+            Remove every file from your Google Drive <strong>app data folder</strong> for
+            Luminary. Your journal rows (text, titles, moods, dates) stay in Luminary; only
+            the audio/video bytes in Drive are removed. Local copies under{" "}
+            <strong>media</strong> on the server are unchanged. This cannot be undone in
+            Drive.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-secondary">
+              Drive app folder:{" "}
+              <strong className="text-primary">
+                {storageLoading ? "…" : formatBytes(storageBytes)}
+              </strong>
+            </span>
+            {status?.connected && storageBytes > 0 ? (
+              <button
+                type="button"
+                className="btn-destructive inline-flex items-center gap-1.5 h-8 px-3.5 text-sm"
+                onClick={() => setConfirmClearDrive(true)}
+                disabled={clearDriveStoragePending}
+              >
+                <Trash2 size={13} strokeWidth={2} aria-hidden />
+                Clear Drive storage
+              </button>
+            ) : status?.connected ? (
+              <span className="text-sm text-tertiary italic">No files to clear</span>
+            ) : (
+              <span className="text-sm text-tertiary">
+                Connect Google Drive to manage app-folder storage.
+              </span>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Privacy notice */}
       <section className="settings-section privacy-notice-section">
         <div className="settings-section-header">
@@ -313,6 +366,48 @@ export function StorageSyncPanel() {
           </p>
         </div>
       </section>
+
+      <AlertDialog open={confirmClearDrive} onOpenChange={setConfirmClearDrive}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all Drive storage?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes about{" "}
+              <strong>{formatBytes(storageBytes)}</strong> of media from your Google Drive
+              app data folder. Text and metadata in Luminary are not removed. You cannot undo
+              this in Drive.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearDriveStoragePending}>Cancel</AlertDialogCancel>
+            <button
+              type="button"
+              className="btn-destructive"
+              disabled={clearDriveStoragePending}
+              onClick={async () => {
+                try {
+                  await clearDriveStorage();
+                  setConfirmClearDrive(false);
+                } catch {
+                  /* toast in useDrive */
+                }
+              }}
+            >
+              {clearDriveStoragePending ? (
+                <>
+                  <Loader2 className="inline h-3 w-3 animate-spin mr-1.5" />
+                  Clearing…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="inline h-3 w-3 mr-1.5" strokeWidth={2} aria-hidden />
+                  Clear storage
+                </>
+              )}
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog
         open={confirmDisconnect}

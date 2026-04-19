@@ -10,9 +10,11 @@ import {
   DRIVE_SCOPES,
   buildOAuthClient,
   clientForRefreshToken,
+  deleteDriveFile,
   getAppDataStorageBytes,
   getConnectedEmail,
   isDriveConfigured,
+  listAppDataFiles,
 } from "../services/driveClient.js";
 import { toPublicUser } from "../services/userService.js";
 
@@ -148,6 +150,54 @@ router.get("/status", requireAuth, async (req, res, next) => {
       email: user.driveEmail,
       syncMode: user.driveSyncMode,
       lastSyncedAt: user.driveLastSyncAt?.toISOString() ?? null,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Delete every file in the user’s Drive app-data folder and clear local Drive pointers on entries. */
+router.delete("/storage/clear", requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.userId!;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { driveRefreshToken: true, driveConnected: true },
+    });
+    if (!user?.driveConnected || !user.driveRefreshToken || !isDriveConfigured()) {
+      return res.status(400).json({
+        error: "Google Drive is not connected",
+        code: "DRIVE_NOT_CONNECTED",
+      });
+    }
+    const client = clientForRefreshToken(user.driveRefreshToken);
+    const files = await listAppDataFiles(client);
+    let deletedCount = 0;
+    const failedFiles: string[] = [];
+    for (const f of files) {
+      if (!f.id) continue;
+      try {
+        await deleteDriveFile(client, f.id);
+        deletedCount++;
+      } catch (err) {
+        failedFiles.push(f.name ?? f.id);
+        // eslint-disable-next-line no-console
+        console.error("[drive/storage/clear] delete failed", f.name, err);
+      }
+    }
+    await prisma.entry.updateMany({
+      where: { userId },
+      data: { driveFileId: null, driveFileSize: null },
+    });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { driveLastSyncAt: new Date() },
+    });
+    res.json({
+      ok: true,
+      deletedCount,
+      failedFiles,
+      message: `Successfully cleared ${deletedCount} file${deletedCount !== 1 ? "s" : ""} from Google Drive.`,
     });
   } catch (err) {
     next(err);

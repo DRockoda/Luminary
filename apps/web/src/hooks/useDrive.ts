@@ -13,6 +13,13 @@ export interface DriveStatus {
   lastSyncedAt: string | null;
 }
 
+export interface ClearDriveStorageResult {
+  ok: boolean;
+  deletedCount: number;
+  failedFiles: string[];
+  message: string;
+}
+
 export function useDrive(options?: { statusEnabled?: boolean }) {
   const qc = useQueryClient();
   const setUser = useAuthStore((s) => s.setUser);
@@ -89,8 +96,33 @@ export function useDrive(options?: { statusEnabled?: boolean }) {
     onError: (err) => toast.error("Couldn't save", apiErrorMessage(err)),
   });
 
+  const clearDriveStorage = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.delete<ClearDriveStorageResult>("/api/drive/storage/clear");
+      return data;
+    },
+    onSuccess: (data) => {
+      void qc.invalidateQueries({ queryKey: ["drive", "storage"] });
+      void qc.invalidateQueries({ queryKey: ["drive", "status"] });
+      void qc.invalidateQueries({ queryKey: ["export", "estimate"] });
+      if (data.failedFiles.length > 0) {
+        toast.success(
+          data.message,
+          `${data.failedFiles.length} file(s) could not be removed from Drive. You can try again later.`,
+        );
+      } else {
+        toast.success(data.message);
+      }
+    },
+    onError: (err) => toast.error("Couldn't clear Drive storage", apiErrorMessage(err)),
+  });
+
   const refetchDrive = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["drive", "status"] });
+    void qc.invalidateQueries({ queryKey: ["drive", "storage"] });
+  }, [qc]);
+
+  const refetchStorage = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["drive", "storage"] });
   }, [qc]);
 
@@ -116,5 +148,8 @@ export function useDrive(options?: { statusEnabled?: boolean }) {
     syncPending: syncNow.isPending,
     updateSyncMode: updateSyncMode.mutate,
     updateSyncModePending: updateSyncMode.isPending,
+    clearDriveStorage: clearDriveStorage.mutateAsync,
+    clearDriveStoragePending: clearDriveStorage.isPending,
+    refetchStorage,
   };
 }
