@@ -1,30 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
 import { Cloud } from "lucide-react";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { api, apiErrorMessage } from "@/lib/api";
-import { toast } from "@/lib/toast";
+import { useDrive } from "@/hooks/useDrive";
 import { useAuthStore } from "@/store/authStore";
-
-interface DriveStatus {
-  connected: boolean;
-  configured: boolean;
-  email: string | null;
-  syncMode: "on-save" | "hourly" | "daily" | "manual";
-  lastSyncedAt: string | null;
-}
 
 export function DriveConnectBanner() {
   const user = useAuthStore((s) => s.user);
   const [searchParams] = useSearchParams();
   const tab = searchParams.get("tab");
 
-  const { data: status } = useQuery<DriveStatus>({
-    queryKey: ["drive", "status"],
-    queryFn: async () => (await api.get<DriveStatus>("/api/drive/status")).data,
-    enabled: !!user,
-    staleTime: 30_000,
-  });
+  const { status, connect, connectPending } = useDrive({ statusEnabled: Boolean(user) });
 
   const hidden = useMemo(() => {
     if (!status) return true;
@@ -36,15 +21,6 @@ export function DriveConnectBanner() {
   }, [status, tab]);
 
   if (hidden) return null;
-
-  async function handleConnect() {
-    try {
-      const { data } = await api.get<{ url: string }>("/api/drive/connect");
-      window.location.href = data.url;
-    } catch (err) {
-      toast.error("Couldn't start Drive flow", apiErrorMessage(err));
-    }
-  }
 
   return (
     <div className="drive-connect-banner">
@@ -64,8 +40,8 @@ export function DriveConnectBanner() {
       <button
         type="button"
         className="btn-primary drive-connect-banner-cta"
-        onClick={handleConnect}
-        disabled={!status?.configured}
+        onClick={() => connect()}
+        disabled={!status?.configured || connectPending}
         title={
           status?.configured
             ? "Open Google sign-in"

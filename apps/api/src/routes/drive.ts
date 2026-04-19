@@ -10,12 +10,22 @@ import {
   DRIVE_SCOPES,
   buildOAuthClient,
   clientForRefreshToken,
+  getAppDataStorageBytes,
   getConnectedEmail,
   isDriveConfigured,
 } from "../services/driveClient.js";
 import { toPublicUser } from "../services/userService.js";
 
 const router = Router();
+
+/** SPA origin for post-OAuth redirects (Netlify). Prefer APP_URL, then first CORS origin. */
+function spaOriginForDriveRedirect(): string {
+  const app = env.APP_URL?.trim();
+  if (app) return app.replace(/\/$/, "");
+  const first = env.CORS_ORIGIN.split(",")[0]?.trim();
+  if (first) return first.replace(/\/$/, "");
+  return "http://localhost:5173";
+}
 
 /**
  * Note on scope: we use the `drive.appdata` scope. Files are stored in a
@@ -50,7 +60,7 @@ router.get("/callback", async (req, res, next) => {
     const { code, state, error } = req.query as Record<string, string | undefined>;
     if (error) {
       return res.redirect(
-        `${env.CORS_ORIGIN}/app/settings?tab=storage&drive=error&reason=${encodeURIComponent(error)}`,
+        `${spaOriginForDriveRedirect()}/app/settings?tab=storage&drive=error&reason=${encodeURIComponent(error)}`,
       );
     }
     if (!code || !state) throw badRequest("Missing OAuth code or state");
@@ -72,7 +82,7 @@ router.get("/callback", async (req, res, next) => {
       // Without a refresh token we cannot keep the connection alive.
       // Send the user back with an actionable error.
       return res.redirect(
-        `${env.CORS_ORIGIN}/app/settings?tab=storage&drive=error&reason=no_refresh_token`,
+        `${spaOriginForDriveRedirect()}/app/settings?tab=storage&drive=error&reason=no_refresh_token`,
       );
     }
     oauth2.setCredentials(tokens);
@@ -86,9 +96,13 @@ router.get("/callback", async (req, res, next) => {
         driveEmail: email,
       },
     });
-    res.redirect(`${env.CORS_ORIGIN}/app/settings?tab=storage&drive=connected`);
+    res.redirect(`${spaOriginForDriveRedirect()}/app/settings?tab=storage&drive=connected`);
   } catch (err) {
-    next(err);
+    // eslint-disable-next-line no-console
+    console.error("[drive/callback]", err);
+    return res.redirect(
+      `${spaOriginForDriveRedirect()}/app/settings?tab=storage&drive=error&reason=auth_failed`,
+    );
   }
 });
 
@@ -134,6 +148,29 @@ router.get("/status", requireAuth, async (req, res, next) => {
       syncMode: user.driveSyncMode,
       lastSyncedAt: user.driveLastSyncAt?.toISOString() ?? null,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/storage", requireAuth, async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId! },
+      select: { driveConnected: true, driveRefreshToken: true },
+    });
+    if (!user?.driveConnected || !user.driveRefreshToken || !isDriveConfigured()) {
+      return res.json({ storageBytes: 0 });
+    }
+    try {
+      const client = clientForRefreshToken(user.driveRefreshToken);
+      const storageBytes = await getAppDataStorageBytes(client);
+      return res.json({ storageBytes });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[drive/storage]", err);
+      return res.json({ storageBytes: 0, stale: true });
+    }
   } catch (err) {
     next(err);
   }

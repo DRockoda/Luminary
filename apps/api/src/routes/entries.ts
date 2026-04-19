@@ -1,5 +1,6 @@
 import { Router } from "express";
 import fs from "node:fs";
+import fsPromises from "node:fs/promises";
 import multer from "multer";
 import path from "node:path";
 import {
@@ -19,6 +20,11 @@ import {
   encryptEntryContent,
   toJournalEntry,
 } from "../services/entryService.js";
+import {
+  clientForRefreshToken,
+  isDriveConfigured,
+  uploadBufferToAppData,
+} from "../services/driveClient.js";
 
 const router = Router();
 
@@ -140,7 +146,36 @@ router.post("/media", upload.single("file"), async (req, res, next) => {
         fileSizeBytes: req.file.size ?? null,
       },
     });
-    res.status(201).json({ entry: toJournalEntry(entry) });
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId! },
+      select: { driveConnected: true, driveRefreshToken: true },
+    });
+    if (user?.driveConnected && user.driveRefreshToken && isDriveConfigured()) {
+      try {
+        const filePath = path.join(env.UPLOAD_DIR, req.file.filename);
+        const buffer = await fsPromises.readFile(filePath);
+        const client = clientForRefreshToken(user.driveRefreshToken);
+        const ext = path.extname(req.file.originalname) || path.extname(req.file.filename) || "";
+        const driveName = `luminary-${entry.id}${ext}`;
+        const uploaded = await uploadBufferToAppData(
+          client,
+          driveName,
+          buffer,
+          req.file.mimetype || "application/octet-stream",
+        );
+        await prisma.entry.update({
+          where: { id: entry.id },
+          data: { driveFileId: uploaded.id, driveFileSize: uploaded.size },
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("[entries/media] Drive backup failed", e);
+      }
+    }
+
+    const saved = await prisma.entry.findUnique({ where: { id: entry.id } });
+    res.status(201).json({ entry: toJournalEntry(saved!) });
   } catch (err) {
     next(err);
   }

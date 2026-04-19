@@ -76,3 +76,53 @@ export async function listAppDataFiles(
   });
   return res.data.files ?? [];
 }
+
+/** Total bytes of files listed in the app data folder (best-effort). */
+export async function getAppDataStorageBytes(client: OAuth2Client): Promise<number> {
+  const files = await listAppDataFiles(client);
+  return files.reduce((sum, f) => sum + Number(f.size ?? 0), 0);
+}
+
+/** Upload a buffer into the hidden per-app Drive folder. */
+export async function uploadBufferToAppData(
+  client: OAuth2Client,
+  filename: string,
+  buffer: Buffer,
+  mimeType: string,
+): Promise<{ id: string; size: number }> {
+  const drive = driveFor(client);
+  const body = Readable.from(buffer);
+  const res = await drive.files.create({
+    requestBody: {
+      name: filename,
+      parents: ["appDataFolder"],
+    },
+    media: {
+      mimeType,
+      body,
+    },
+    fields: "id, size",
+  });
+  const id = res.data.id;
+  if (!id) throw new Error("Drive upload did not return a file id");
+  const size = Number(res.data.size ?? buffer.byteLength);
+  return { id, size };
+}
+
+export async function deleteDriveFile(client: OAuth2Client, fileId: string): Promise<void> {
+  const drive = driveFor(client);
+  await drive.files.delete({ fileId });
+}
+
+/** Download full file from Drive (e.g. repair / admin tools). */
+export async function downloadDriveFileBuffer(
+  client: OAuth2Client,
+  fileId: string,
+): Promise<Buffer> {
+  const drive = driveFor(client);
+  const res = await drive.files.get(
+    { fileId, alt: "media", supportsAllDrives: false },
+    { responseType: "arraybuffer" },
+  );
+  return Buffer.from(res.data as ArrayBuffer);
+}

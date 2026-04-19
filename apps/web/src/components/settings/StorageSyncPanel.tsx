@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Shield, Cloud } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -9,17 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { useDrive, type DriveStatus } from "@/hooks/useDrive";
 import { useAuthStore } from "@/store/authStore";
-
-interface DriveStatus {
-  connected: boolean;
-  configured: boolean;
-  email: string | null;
-  syncMode: "on-save" | "hourly" | "daily" | "manual";
-  lastSyncedAt: string | null;
-}
 
 interface StorageEstimate {
   textCount: number;
@@ -63,10 +56,20 @@ export function StorageSyncPanel() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
-  const { data: status, isLoading: statusLoading } = useQuery<DriveStatus>({
-    queryKey: ["drive", "status"],
-    queryFn: async () => (await api.get<DriveStatus>("/api/drive/status")).data,
-  });
+  const {
+    status,
+    statusLoading,
+    storageBytes,
+    storageLoading,
+    refetchDrive,
+    connect,
+    connectPending,
+    disconnect,
+    disconnectPending,
+    syncNow,
+    syncPending,
+    updateSyncMode,
+  } = useDrive();
 
   const { data: estimate } = useQuery<StorageEstimate>({
     queryKey: ["export", "estimate"],
@@ -80,65 +83,28 @@ export function StorageSyncPanel() {
     if (!driveParam) return;
     if (driveParam === "connected") {
       toast.success("Google Drive connected");
-      qc.invalidateQueries({ queryKey: ["drive", "status"] });
+      refetchDrive();
       // Refresh user profile so other parts of the UI know.
       api.get("/api/auth/me").then(({ data }) => setUser(data.user)).catch(() => {});
     } else if (driveParam === "error") {
       const reason = searchParams.get("reason");
+      const messages: Record<string, string> = {
+        no_refresh_token:
+          "Google didn't return a refresh token. Try again and grant offline access.",
+        auth_failed: "Connection failed. Try again or check server logs.",
+        access_denied: "Google Drive access was denied.",
+        invalid_grant: "Google revoked access. Try connecting again.",
+      };
       toast.error(
         "Couldn't connect Drive",
-        reason === "no_refresh_token"
-          ? "Google didn't return a refresh token. Please try again and grant offline access."
-          : reason ?? undefined,
+        reason ? messages[reason] ?? decodeURIComponent(reason) : undefined,
       );
     }
     const params = new URLSearchParams(searchParams);
     params.delete("drive");
     params.delete("reason");
     setSearchParams(params, { replace: true });
-  }, [searchParams, setSearchParams, qc, setUser]);
-
-  const connect = useMutation({
-    mutationFn: async () => {
-      const { data } = await api.get<{ url: string }>("/api/drive/connect");
-      window.location.href = data.url;
-    },
-    onError: (err) => toast.error("Couldn't start Drive flow", apiErrorMessage(err)),
-  });
-
-  const disconnect = useMutation({
-    mutationFn: async () => {
-      await api.post("/api/drive/disconnect");
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["drive", "status"] });
-      api.get("/api/auth/me").then(({ data }) => setUser(data.user)).catch(() => {});
-      toast.success("Google Drive disconnected");
-      setConfirmDisconnect(false);
-    },
-    onError: (err) => toast.error("Couldn't disconnect", apiErrorMessage(err)),
-  });
-
-  const sync = useMutation({
-    mutationFn: async () => {
-      await api.post("/api/drive/sync");
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["drive", "status"] });
-      toast.success("Sync complete");
-    },
-    onError: (err) => toast.error("Sync failed", apiErrorMessage(err)),
-  });
-
-  const updateSyncMode = useMutation({
-    mutationFn: async (syncMode: DriveStatus["syncMode"]) => {
-      await api.patch("/api/drive/settings", { syncMode });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["drive", "status"] });
-    },
-    onError: (err) => toast.error("Couldn't save", apiErrorMessage(err)),
-  });
+  }, [searchParams, setSearchParams, qc, setUser, refetchDrive]);
 
   const totalBytes = estimate?.totalBytes ?? 0;
   const usagePct = Math.min(100, (totalBytes / FREE_DRIVE_BYTES) * 100);
@@ -178,6 +144,17 @@ export function StorageSyncPanel() {
             </div>
 
             <div className="settings-row">
+              <span className="settings-row-label">Drive app folder</span>
+              <span className="settings-row-value">
+                {storageLoading ? (
+                  <Loader2 className="inline h-3 w-3 animate-spin" />
+                ) : (
+                  formatBytes(storageBytes)
+                )}
+              </span>
+            </div>
+
+            <div className="settings-row">
               <span className="settings-row-label">Last synced</span>
               <span className="settings-row-value">
                 {status.lastSyncedAt
@@ -187,10 +164,10 @@ export function StorageSyncPanel() {
               <button
                 type="button"
                 className="btn-ghost-sm settings-row-action"
-                onClick={() => sync.mutate()}
-                disabled={sync.isPending}
+                onClick={() => syncNow()}
+                disabled={syncPending}
               >
-                {sync.isPending ? (
+                {syncPending ? (
                   <>
                     <Loader2 className="h-3 w-3 animate-spin" /> Syncing…
                   </>
@@ -206,9 +183,7 @@ export function StorageSyncPanel() {
                 className="settings-select"
                 value={status.syncMode}
                 onChange={(e) =>
-                  updateSyncMode.mutate(
-                    e.target.value as DriveStatus["syncMode"],
-                  )
+                  updateSyncMode(e.target.value as DriveStatus["syncMode"])
                 }
               >
                 <option value="on-save">On each save (recommended)</option>
@@ -234,8 +209,8 @@ export function StorageSyncPanel() {
             <button
               type="button"
               className="btn-primary settings-row-action"
-              onClick={() => connect.mutate()}
-              disabled={!status?.configured || connect.isPending}
+              onClick={() => connect()}
+              disabled={!status?.configured || connectPending}
             >
               <Cloud size={13} /> Connect Drive
             </button>
@@ -333,10 +308,17 @@ export function StorageSyncPanel() {
             <button
               type="button"
               className="btn-destructive"
-              onClick={() => disconnect.mutate()}
-              disabled={disconnect.isPending}
+              onClick={async () => {
+                try {
+                  await disconnect();
+                  setConfirmDisconnect(false);
+                } catch {
+                  /* toast handled in useDrive */
+                }
+              }}
+              disabled={disconnectPending}
             >
-              {disconnect.isPending ? (
+              {disconnectPending ? (
                 <>
                   <Loader2 className="h-3 w-3 animate-spin" /> Disconnecting…
                 </>
