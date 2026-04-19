@@ -17,9 +17,18 @@ export async function purgeExpiredTrash(): Promise<number> {
   return result.count;
 }
 
+async function runPurgeSafely(): Promise<void> {
+  try {
+    await purgeExpiredTrash();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Trash purge failed — database may not be ready:", message);
+  }
+}
+
 export function startTrashPurgeScheduler(): void {
-  void purgeExpiredTrash();
+  void runPurgeSafely();
   setInterval(() => {
-    void purgeExpiredTrash();
+    void runPurgeSafely();
   }, 24 * 60 * 60 * 1000);
 }
