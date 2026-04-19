@@ -77,14 +77,22 @@ export function useDrive(options?: { statusEnabled?: boolean }) {
     void qc.invalidateQueries({ queryKey: ["drive", "storage"] });
   }, [qc]);
 
+  const connectDisabled =
+    connect.isPending ||
+    (statusQuery.isSuccess && statusQuery.data?.configured === false);
+
   return {
     status: statusQuery.data,
     statusLoading: statusQuery.isLoading,
+    statusError: statusQuery.error,
+    isStatusError: statusQuery.isError,
+    refetchStatus: statusQuery.refetch,
     storageBytes: storageQuery.data?.storageBytes ?? 0,
     storageLoading: storageQuery.isFetching,
     refetchDrive,
     connect: connect.mutate,
     connectPending: connect.isPending,
+    connectDisabled,
     disconnect: disconnect.mutateAsync,
     disconnectPending: disconnect.isPending,
     syncNow: syncNow.mutate,

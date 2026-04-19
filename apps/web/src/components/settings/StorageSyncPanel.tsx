@@ -59,11 +59,15 @@ export function StorageSyncPanel() {
   const {
     status,
     statusLoading,
+    isStatusError,
+    statusError,
+    refetchStatus,
     storageBytes,
     storageLoading,
     refetchDrive,
     connect,
     connectPending,
+    connectDisabled,
     disconnect,
     disconnectPending,
     syncNow,
@@ -90,15 +94,19 @@ export function StorageSyncPanel() {
       const reason = searchParams.get("reason");
       const messages: Record<string, string> = {
         no_refresh_token:
-          "Google didn't return a refresh token. Try again and grant offline access.",
+          "Google didn't return a refresh token (common if Luminary was already linked to this Google account).\n\nFix: open https://myaccount.google.com/permissions — remove Luminary — then tap Connect Drive again and choose Grant / offline access.",
         auth_failed: "Connection failed. Try again or check server logs.",
         access_denied: "Google Drive access was denied.",
         invalid_grant: "Google revoked access. Try connecting again.",
       };
-      toast.error(
-        "Couldn't connect Drive",
-        reason ? messages[reason] ?? decodeURIComponent(reason) : undefined,
-      );
+      const desc = reason
+        ? messages[reason] ?? decodeURIComponent(reason)
+        : undefined;
+      if (reason === "no_refresh_token") {
+        toast.error("Couldn't connect Drive", desc, 14_000);
+      } else {
+        toast.error("Couldn't connect Drive", desc);
+      }
     }
     const params = new URLSearchParams(searchParams);
     params.delete("drive");
@@ -123,6 +131,23 @@ export function StorageSyncPanel() {
               <Loader2 className="inline h-3 w-3 animate-spin mr-1.5" />
               Loading…
             </span>
+          </div>
+        ) : isStatusError ? (
+          <div className="settings-row settings-row-column gap-2">
+            <p className="settings-row-value text-danger">
+              Couldn&apos;t load Drive status. Check your connection and that the API
+              URL is set for this build.
+            </p>
+            <p className="text-tertiary text-sm">
+              {statusError instanceof Error ? statusError.message : "Request failed"}
+            </p>
+            <button
+              type="button"
+              className="btn-secondary self-start"
+              onClick={() => void refetchStatus()}
+            >
+              Retry
+            </button>
           </div>
         ) : status?.connected ? (
           <>
@@ -210,7 +235,12 @@ export function StorageSyncPanel() {
               type="button"
               className="btn-primary settings-row-action"
               onClick={() => connect()}
-              disabled={!status?.configured || connectPending}
+              disabled={connectDisabled}
+              title={
+                connectDisabled && !connectPending
+                  ? "Drive OAuth is not configured on the API (missing Google env vars)."
+                  : undefined
+              }
             >
               <Cloud size={13} /> Connect Drive
             </button>

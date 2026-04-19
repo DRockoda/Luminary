@@ -5,7 +5,7 @@ import { env } from "../env.js";
 import { encryptString } from "../lib/crypto.js";
 import { badRequest } from "../lib/errors.js";
 import { requireAuth } from "../middleware/auth.js";
-import { signAccessToken } from "../lib/jwt.js";
+import { signDriveOAuthState, verifyDriveOAuthState } from "../lib/jwt.js";
 import {
   DRIVE_SCOPES,
   buildOAuthClient,
@@ -42,15 +42,15 @@ router.get("/connect", requireAuth, (req, res) => {
     });
   }
 
-  // Stateless state token = a short-lived JWT bound to this user.
-  const state = signAccessToken(req.userId!);
+  // Stateless CSRF token — dedicated JWT (30m), not the API access token (often 15m).
+  const state = signDriveOAuthState(req.userId!);
   const oauth2 = buildOAuthClient();
   const url = oauth2.generateAuthUrl({
     access_type: "offline",
-    prompt: "consent", // force refresh_token to be returned
+    // `consent` helps Google return a refresh_token; `select_account` avoids silent wrong-account grants.
+    prompt: "select_account consent",
     scope: DRIVE_SCOPES,
     state,
-    include_granted_scopes: true,
   });
   res.json({ url });
 });
@@ -67,10 +67,9 @@ router.get("/callback", async (req, res, next) => {
     if (!isDriveConfigured()) throw badRequest("Drive not configured");
 
     // Verify the state JWT and recover the userId without requiring a cookie.
-    const { verifyAccessToken } = await import("../lib/jwt.js");
     let userId: string;
     try {
-      const payload = verifyAccessToken(state);
+      const payload = verifyDriveOAuthState(state);
       userId = payload.sub;
     } catch {
       throw badRequest("Invalid OAuth state");
@@ -79,8 +78,10 @@ router.get("/callback", async (req, res, next) => {
     const oauth2 = buildOAuthClient();
     const { tokens } = await oauth2.getToken(code);
     if (!tokens.refresh_token) {
-      // Without a refresh token we cannot keep the connection alive.
-      // Send the user back with an actionable error.
+      // Common when this Google account already authorized this client without offline access.
+      // User must revoke Luminary at https://myaccount.google.com/permissions then connect again.
+      // eslint-disable-next-line no-console
+      console.warn("[drive/callback] missing refresh_token; keys=%s", Object.keys(tokens).join(","));
       return res.redirect(
         `${spaOriginForDriveRedirect()}/app/settings?tab=storage&drive=error&reason=no_refresh_token`,
       );

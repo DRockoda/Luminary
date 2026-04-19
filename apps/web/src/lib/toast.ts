@@ -28,13 +28,14 @@ export const toast = {
       },
     });
   },
-  error(title: string, description?: string) {
+  error(title: string, description?: string, duration = 4000) {
     hotToast.error(message(title, description), {
-      duration: 4000,
+      duration,
       style: {
         ...base,
         borderLeft: "3px solid var(--danger)",
         whiteSpace: "pre-line",
+        maxWidth: duration > 5000 ? 420 : 360,
       },
     });
   },

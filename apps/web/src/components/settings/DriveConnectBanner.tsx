@@ -9,7 +9,9 @@ export function DriveConnectBanner() {
   const [searchParams] = useSearchParams();
   const tab = searchParams.get("tab");
 
-  const { status, connect, connectPending } = useDrive({ statusEnabled: Boolean(user) });
+  const { status, connect, connectPending, connectDisabled } = useDrive({
+    statusEnabled: Boolean(user),
+  });
 
   const hidden = useMemo(() => {
     if (!status) return true;
@@ -41,11 +43,11 @@ export function DriveConnectBanner() {
         type="button"
         className="btn-primary drive-connect-banner-cta"
         onClick={() => connect()}
-        disabled={!status?.configured || connectPending}
+        disabled={connectDisabled}
         title={
-          status?.configured
-            ? "Open Google sign-in"
-            : "Drive isn't configured on the server"
+          connectDisabled && !connectPending
+            ? "Drive OAuth is not configured on the API (missing Google env vars)."
+            : "Open Google sign-in"
         }
       >
         <Cloud size={14} strokeWidth={2} />

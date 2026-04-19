@@ -43,7 +43,7 @@ function formatDate(iso: string): string {
 export default function AdminUsersPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["admin", "users", q],
     queryFn: async () =>
       (
@@ -67,6 +67,33 @@ export default function AdminUsersPage() {
     },
     onError: (err) => toast.error("Couldn't update verification", apiErrorMessage(err)),
   });
+
+  if (isError) {
+    return (
+      <div>
+        <div className="admin-page-header">
+          <div>
+            <h1 className="admin-page-title">Users</h1>
+            <p className="admin-page-subtitle text-danger">
+              Couldn&apos;t load users — the request failed (often a cookie or CORS issue
+              between the admin site and API).
+            </p>
+            <p className="text-tertiary text-sm mt-2">
+              {apiErrorMessage(error)}
+            </p>
+            <button
+              type="button"
+              className="btn-secondary mt-4"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "Retrying…" : "Retry"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

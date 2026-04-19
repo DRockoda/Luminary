@@ -167,12 +167,12 @@ router.get("/stats/overview", async (_req, res, next) => {
 
 router.get("/users", async (req, res, next) => {
   try {
-    const search = String(req.query.q ?? "").trim().toLowerCase();
+    const search = String(req.query.q ?? "").trim();
     const where = search
       ? {
           OR: [
-            { email: { contains: search } },
-            { displayName: { contains: search } },
+            { email: { contains: search, mode: "insensitive" as const } },
+            { displayName: { contains: search, mode: "insensitive" as const } },
           ],
         }
       : undefined;

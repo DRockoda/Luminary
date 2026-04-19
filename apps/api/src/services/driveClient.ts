@@ -16,7 +16,9 @@ export const DRIVE_SCOPES = [
 ];
 
 export function isDriveConfigured(): boolean {
-  return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+  return Boolean(
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI?.trim(),
+  );
 }
 
 export function buildOAuthClient(): OAuth2Client {
