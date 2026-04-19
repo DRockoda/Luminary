@@ -1,6 +1,12 @@
 import type { PublicUser } from "@luminary/shared";
 import { create } from "zustand";
 import { api } from "../lib/api";
+import {
+  clearClientAuthSession,
+  getPersistedRefreshToken,
+  persistRefreshToken,
+  setMemoryAccessToken,
+} from "../lib/authSession";
 
 /**
  * Thrown when the API tells us the account exists but isn't email-verified yet.
@@ -14,6 +20,17 @@ export class EmailVerificationRequiredError extends Error {
     this.name = "EmailVerificationRequiredError";
     this.email = email;
   }
+}
+
+type AuthTokensResponse = {
+  user: PublicUser;
+  accessToken: string;
+  refreshToken: string;
+};
+
+function applySessionFromAuthResponse(data: AuthTokensResponse): void {
+  setMemoryAccessToken(data.accessToken);
+  persistRefreshToken(data.refreshToken);
 }
 
 interface AuthState {
@@ -46,13 +63,24 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true });
     try {
       const { data } = await api.get<{ user: PublicUser }>("/api/auth/me");
+      // Prefer httpOnly cookie session when it works; drop any stale in-memory Bearer.
+      setMemoryAccessToken(null);
       set({ user: data.user });
     } catch {
-      try {
-        const { data } = await api.post<{ user: PublicUser }>("/api/auth/refresh");
-        set({ user: data.user });
-      } catch {
+      const savedToken = getPersistedRefreshToken();
+      if (!savedToken) {
         set({ user: null });
+      } else {
+        try {
+          const { data } = await api.post<AuthTokensResponse>("/api/auth/refresh", {
+            refreshToken: savedToken,
+          });
+          applySessionFromAuthResponse(data);
+          set({ user: data.user });
+        } catch {
+          clearClientAuthSession();
+          set({ user: null });
+        }
       }
     } finally {
       set({ loading: false, initialized: true });
@@ -60,11 +88,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   login: async (email, password, rememberMe = true) => {
     try {
-      const { data } = await api.post<{ user: PublicUser }>("/api/auth/login", {
+      const { data } = await api.post<AuthTokensResponse>("/api/auth/login", {
         email,
         password,
         rememberMe,
       });
+      applySessionFromAuthResponse(data);
       set({ user: data.user });
     } catch (err: unknown) {
       const e = err as {
@@ -89,20 +118,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     return { email: data.email };
   },
   verifyOtp: async (email, code, rememberMe = true) => {
-    const { data } = await api.post<{ user: PublicUser }>("/api/auth/verify-otp", {
+    const { data } = await api.post<AuthTokensResponse>("/api/auth/verify-otp", {
       email,
       code,
       rememberMe,
     });
+    applySessionFromAuthResponse(data);
     set({ user: data.user });
   },
   resendOtp: async (email) => {
     await api.post("/api/auth/resend-otp", { email });
   },
   logout: async () => {
+    const rt = getPersistedRefreshToken();
     try {
-      await api.post("/api/auth/logout");
+      await api.post("/api/auth/logout", rt ? { refreshToken: rt } : {});
     } finally {
+      clearClientAuthSession();
       set({ user: null });
     }
   },

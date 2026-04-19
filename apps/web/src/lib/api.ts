@@ -1,4 +1,12 @@
 import axios, { AxiosError } from "axios";
+import type { PublicUser } from "@luminary/shared";
+import {
+  clearClientAuthSession,
+  getMemoryAccessToken,
+  getPersistedRefreshToken,
+  persistRefreshToken,
+  setMemoryAccessToken,
+} from "./authSession";
 import { resolveApiBaseURL } from "./apiBaseUrl";
 
 export const api = axios.create({
@@ -9,7 +17,17 @@ export const api = axios.create({
   },
 });
 
+api.interceptors.request.use((config) => {
+  const t = getMemoryAccessToken();
+  if (t) {
+    config.headers.Authorization = `Bearer ${t}`;
+  }
+  return config;
+});
+
 let refreshing: Promise<void> | null = null;
+
+type RefreshResponse = { user: PublicUser; accessToken: string; refreshToken: string };
 
 api.interceptors.response.use(
   (r) => r,
@@ -26,13 +44,26 @@ api.interceptors.response.use(
       (original as { _retry?: boolean })._retry = true;
       try {
         if (!refreshing) {
-          refreshing = api.post("/api/auth/refresh").then(() => undefined);
+          refreshing = (async () => {
+            const rt = getPersistedRefreshToken();
+            if (!rt) throw new Error("No refresh token");
+            const { data } = await api.post<RefreshResponse>("/api/auth/refresh", {
+              refreshToken: rt,
+            });
+            setMemoryAccessToken(data.accessToken);
+            persistRefreshToken(data.refreshToken);
+            const { useAuthStore } = await import("../store/authStore");
+            useAuthStore.getState().setUser(data.user);
+          })();
         }
         await refreshing;
         refreshing = null;
         return api.request(original);
       } catch (e) {
         refreshing = null;
+        clearClientAuthSession();
+        const { useAuthStore } = await import("../store/authStore");
+        useAuthStore.getState().setUser(null);
         if (typeof window !== "undefined") {
           const path = window.location.pathname;
           if (path.startsWith("/admin")) {

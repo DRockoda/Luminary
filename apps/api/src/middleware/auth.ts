@@ -12,8 +12,19 @@ declare global {
   }
 }
 
+function readAccessToken(req: Request): string | undefined {
+  const fromCookie = (req.cookies as Record<string, string> | undefined)?.[COOKIE_NAMES.ACCESS];
+  if (fromCookie) return fromCookie;
+  const authz = req.headers.authorization;
+  if (typeof authz === "string" && authz.startsWith("Bearer ")) {
+    const t = authz.slice(7).trim();
+    if (t) return t;
+  }
+  return undefined;
+}
+
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {
-  const token = (req.cookies as Record<string, string> | undefined)?.[COOKIE_NAMES.ACCESS];
+  const token = readAccessToken(req);
   if (!token) return next(unauthorized("Not authenticated"));
   try {
     const payload = verifyAccessToken(token);

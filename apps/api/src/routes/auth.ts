@@ -46,11 +46,15 @@ function newOtp(): string {
   return n.toString().padStart(6, "0");
 }
 
-async function issueTokens(userId: string, rememberMe: boolean, res: import("express").Response) {
+async function issueTokens(
+  userId: string,
+  rememberMe: boolean,
+  res: import("express").Response,
+): Promise<{ accessToken: string; refreshToken: string }> {
   const jti = crypto.randomUUID();
   const access = signAccessToken(userId);
-  const refresh = signRefreshToken(userId, jti);
-  const tokenHash = hashToken(refresh);
+  const refreshJwt = signRefreshToken(userId, jti);
+  const tokenHash = hashToken(refreshJwt);
   const ttlDays = 30;
   await prisma.refreshToken.create({
     data: {
@@ -61,7 +65,8 @@ async function issueTokens(userId: string, rememberMe: boolean, res: import("exp
     },
   });
   setAccessCookie(res, access);
-  setRefreshCookie(res, refresh, rememberMe);
+  setRefreshCookie(res, refreshJwt, rememberMe);
+  return { accessToken: access, refreshToken: refreshJwt };
 }
 
 function newToken() {
@@ -133,16 +138,23 @@ router.post("/login", authRateLimit, async (req, res, next) => {
       });
       return;
     }
-    await issueTokens(user.id, body.rememberMe ?? true, res);
-    res.json({ user: toPublicUser(user) });
+    const tokens = await issueTokens(user.id, body.rememberMe ?? true, res);
+    res.json({ user: toPublicUser(user), ...tokens });
   } catch (err) {
     next(err);
   }
 });
 
+const optionalRefreshBodySchema = z.object({
+  refreshToken: z.string().min(1).optional(),
+});
+
 router.post("/logout", async (req, res, next) => {
   try {
-    const refresh = (req.cookies as Record<string, string> | undefined)?.[COOKIE_NAMES.REFRESH];
+    const body = optionalRefreshBodySchema.parse(req.body ?? {});
+    const refresh =
+      (req.cookies as Record<string, string> | undefined)?.[COOKIE_NAMES.REFRESH] ??
+      body.refreshToken;
     if (refresh) {
       try {
         const payload = verifyRefreshToken(refresh);
@@ -163,7 +175,10 @@ router.post("/logout", async (req, res, next) => {
 
 router.post("/refresh", async (req, res, next) => {
   try {
-    const refresh = (req.cookies as Record<string, string> | undefined)?.[COOKIE_NAMES.REFRESH];
+    const body = optionalRefreshBodySchema.parse(req.body ?? {});
+    const refresh =
+      (req.cookies as Record<string, string> | undefined)?.[COOKIE_NAMES.REFRESH] ??
+      body.refreshToken;
     if (!refresh) throw unauthorized("No refresh token");
     const payload = verifyRefreshToken(refresh);
     const tokenHash = hashToken(refresh);
@@ -175,10 +190,10 @@ router.post("/refresh", async (req, res, next) => {
       where: { id: record.id },
       data: { revokedAt: new Date() },
     });
-    await issueTokens(payload.sub, true, res);
+    const tokens = await issueTokens(payload.sub, true, res);
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) throw unauthorized();
-    res.json({ user: toPublicUser(user) });
+    res.json({ user: toPublicUser(user), ...tokens });
   } catch (err) {
     next(err);
   }
@@ -229,8 +244,8 @@ router.post("/verify-otp", authRateLimit, async (req, res, next) => {
     if (!user) throw badRequest("Invalid code");
     if (user.emailVerified) {
       // Already verified — just log them in.
-      await issueTokens(user.id, body.rememberMe ?? true, res);
-      res.json({ user: toPublicUser(user) });
+      const tokens = await issueTokens(user.id, body.rememberMe ?? true, res);
+      res.json({ user: toPublicUser(user), ...tokens });
       return;
     }
     if (
@@ -251,8 +266,8 @@ router.post("/verify-otp", authRateLimit, async (req, res, next) => {
         emailVerifyExpires: null,
       },
     });
-    await issueTokens(updated.id, body.rememberMe ?? true, res);
-    res.json({ user: toPublicUser(updated) });
+    const tokens = await issueTokens(updated.id, body.rememberMe ?? true, res);
+    res.json({ user: toPublicUser(updated), ...tokens });
   } catch (err) {
     next(err);
   }
