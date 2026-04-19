@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd ../.. && npm ci",
+  "installCommand": "cd ../.. && npm ci --include=dev",
   "rewrites": [
     { "source": "/health", "destination": "/api" },
     { "source": "/api/(.*)", "destination": "/api" },
