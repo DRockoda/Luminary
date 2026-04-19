@@ -17,7 +17,8 @@ api.interceptors.response.use(
       status === 401 &&
       original &&
       !(original as { _retry?: boolean })._retry &&
-      !original.url?.includes("/api/auth/")
+      !original.url?.includes("/api/auth/") &&
+      !original.url?.includes("/api/admin/")
     ) {
       (original as { _retry?: boolean })._retry = true;
       try {
