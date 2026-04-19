@@ -24,6 +24,7 @@ router.get("/active", async (_req, res, next) => {
         link: announcement.link,
         linkLabel: announcement.linkLabel,
         color: announcement.color,
+        isMaintenance: announcement.isMaintenance,
         createdAt: announcement.createdAt.toISOString(),
         expiresAt: announcement.expiresAt?.toISOString() ?? null,
       },

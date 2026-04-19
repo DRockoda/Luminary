@@ -5,6 +5,7 @@ import {
   Settings as SettingsIcon,
   Trash2,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { TopBanners } from "@/components/layout/TopBanners";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -20,6 +21,15 @@ const MAIN_NAV = [
 ];
 
 const SETTINGS_NAV = [{ to: "/app/settings", label: "Settings", icon: SettingsIcon }];
+
+const navItemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  show: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.05, duration: 0.2 },
+  }),
+};
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();
@@ -51,67 +61,81 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <nav className="flex flex-1 flex-col gap-0.5 px-3 pt-3">
-          {MAIN_NAV.map((item) => (
-            <NavLink
+          {MAIN_NAV.map((item, i) => (
+            <motion.div
               key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  "nav-item relative flex h-10 items-center gap-2.5 rounded-md px-3 text-[13px] transition-colors",
-                  isActive ? "is-active" : "hover:bg-hover",
-                )
-              }
+              custom={i}
+              variants={navItemVariants}
+              initial="hidden"
+              animate="show"
             >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-accent" />
-                  )}
-                  <item.icon
-                    className={cn(
-                      "h-[15px] w-[15px]",
-                      isActive ? "text-primary" : "text-secondary",
+              <NavLink
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    "nav-item relative flex h-10 items-center gap-2.5 rounded-md px-3 text-[13px] transition-colors",
+                    isActive ? "is-active" : "hover:bg-hover",
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-accent" />
                     )}
-                    strokeWidth={isActive ? 2 : 1.75}
-                  />
-                  <span className="nav-label flex-1 text-left">{item.label}</span>
-                  {item.to === "/app/trash" && trashCount > 0 && (
-                    <span className="nav-item-count">{trashCount}</span>
-                  )}
-                </>
-              )}
-            </NavLink>
+                    <item.icon
+                      className={cn(
+                        "h-[15px] w-[15px]",
+                        isActive ? "text-primary" : "text-secondary",
+                      )}
+                      strokeWidth={isActive ? 2 : 1.75}
+                    />
+                    <span className="nav-label flex-1 text-left">{item.label}</span>
+                    {item.to === "/app/trash" && trashCount > 0 && (
+                      <span className="nav-item-count">{trashCount}</span>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            </motion.div>
           ))}
 
           <div className="my-2 border-t border-border-subtle" />
 
-          {SETTINGS_NAV.map((item) => (
-            <NavLink
+          {SETTINGS_NAV.map((item, i) => (
+            <motion.div
               key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  "nav-item relative flex h-10 items-center gap-2.5 rounded-md px-3 text-[13px] transition-colors",
-                  isActive ? "is-active" : "hover:bg-hover",
-                )
-              }
+              custom={MAIN_NAV.length + i}
+              variants={navItemVariants}
+              initial="hidden"
+              animate="show"
             >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-accent" />
-                  )}
-                  <item.icon
-                    className={cn(
-                      "h-[15px] w-[15px]",
-                      isActive ? "text-primary" : "text-secondary",
+              <NavLink
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    "nav-item relative flex h-10 items-center gap-2.5 rounded-md px-3 text-[13px] transition-colors",
+                    isActive ? "is-active" : "hover:bg-hover",
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-accent" />
                     )}
-                    strokeWidth={isActive ? 2 : 1.75}
-                  />
-                  <span className="nav-label">{item.label}</span>
-                </>
-              )}
-            </NavLink>
+                    <item.icon
+                      className={cn(
+                        "h-[15px] w-[15px]",
+                        isActive ? "text-primary" : "text-secondary",
+                      )}
+                      strokeWidth={isActive ? 2 : 1.75}
+                    />
+                    <span className="nav-label">{item.label}</span>
+                  </>
+                )}
+              </NavLink>
+            </motion.div>
           ))}
         </nav>
 

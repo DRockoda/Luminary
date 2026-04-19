@@ -4,9 +4,10 @@ import {
   getMoodColor,
   getMoodLabel,
 } from "@luminary/shared";
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 
-export function MoodDot({
+function MoodDotInner({
   mood,
   size = 8,
   className,
@@ -30,6 +31,8 @@ export function MoodDot({
     />
   );
 }
+
+export const MoodDot = memo(MoodDotInner);
 
 export function MoodLegend({ className }: { className?: string }) {
   return (

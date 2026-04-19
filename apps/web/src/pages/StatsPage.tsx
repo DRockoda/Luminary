@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarNavArrow } from "@/components/calendar/CalendarNavArrow";
 import { cn } from "@/lib/utils";
+import { AnimatedNumber } from "@/components/stats/AnimatedNumber";
 import { ActivityHeatmapView, buildUtcYearHeatmapWeeks, HeatmapGrid } from "@/components/stats/HeatmapGrid";
 import { MoodDistributionBars } from "@/components/stats/MoodDistributionBars";
 import { QuoteCard } from "@/components/stats/QuoteCard";
@@ -54,7 +55,7 @@ export default function StatsPage() {
   const fromIso = toIso(from);
   const toIsoStr = toIso(to);
 
-  const { data: summary } = useStatsSummary(period);
+  const { data: summary, isPending: summaryLoading } = useStatsSummary(period);
   const { data: onThisDay } = useOnThisDay();
 
   const { data: rangeEntries = [] } = useEntriesRange(fromIso, toIsoStr);
@@ -158,45 +159,6 @@ export default function StatsPage() {
     return { mostActive, bestMood, worstMood };
   }, [summary?.moodByDayOfWeek]);
 
-  const statCards = [
-    {
-      icon: Flame,
-      value: summary?.currentStreak ?? 0,
-      caption: "Current streak",
-      accent: "var(--accent)",
-    },
-    {
-      icon: CheckCircle2,
-      value: `${summary?.completionRate ?? 0}%`,
-      caption: "Completion rate",
-      accent: "var(--success)",
-    },
-    {
-      icon: Calendar,
-      value: summary?.totalDays ?? 0,
-      caption: "Days journaled",
-      accent: "var(--accent)",
-    },
-    {
-      icon: Star,
-      value: summary?.bestStreak ?? 0,
-      caption: "Best streak",
-      accent: "var(--warning)",
-    },
-    {
-      icon: Mic,
-      value: formatRecorded(summary?.totalRecordedSec ?? 0),
-      caption: "Time recorded",
-      accent: "var(--accent)",
-    },
-    {
-      icon: PencilLine,
-      value: (summary?.totalWords ?? 0).toLocaleString(),
-      caption: "Words written",
-      accent: "var(--accent)",
-    },
-  ];
-
   const entryBreakdownRows = [
     {
       key: "audio",
@@ -255,19 +217,80 @@ export default function StatsPage() {
           </div>
         ) : (
           <>
+            {summaryLoading && !summary ? (
+              <div className="stats-skeleton-grid">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="skeleton-stat-card skeleton-shimmer" />
+                ))}
+              </div>
+            ) : (
             <section className="stats-summary-grid">
-              {statCards.map((card) => (
-                <div key={card.caption} className="stat-card stat-card--metric">
-                  <div className="stat-card-icon-wrap" aria-hidden>
-                    <card.icon className="h-[18px] w-[18px]" strokeWidth={1.85} style={{ color: card.accent }} />
-                  </div>
-                  <div className="stat-card-metric-body">
-                    <div className="stat-card-value">{card.value}</div>
-                    <p className="stat-card-caption">{card.caption}</p>
-                  </div>
+              <div className="stat-card stat-card--metric">
+                <div className="stat-card-icon-wrap" aria-hidden>
+                  <Flame className="h-[18px] w-[18px]" strokeWidth={1.85} style={{ color: "var(--accent)" }} />
                 </div>
-              ))}
+                <div className="stat-card-metric-body">
+                  <div className="stat-card-value">
+                    <AnimatedNumber value={summary?.currentStreak ?? 0} />
+                  </div>
+                  <p className="stat-card-caption">Current streak</p>
+                </div>
+              </div>
+              <div className="stat-card stat-card--metric">
+                <div className="stat-card-icon-wrap" aria-hidden>
+                  <CheckCircle2 className="h-[18px] w-[18px]" strokeWidth={1.85} style={{ color: "var(--success)" }} />
+                </div>
+                <div className="stat-card-metric-body">
+                  <div className="stat-card-value">
+                    <AnimatedNumber value={summary?.completionRate ?? 0} />%
+                  </div>
+                  <p className="stat-card-caption">Completion rate</p>
+                </div>
+              </div>
+              <div className="stat-card stat-card--metric">
+                <div className="stat-card-icon-wrap" aria-hidden>
+                  <Calendar className="h-[18px] w-[18px]" strokeWidth={1.85} style={{ color: "var(--accent)" }} />
+                </div>
+                <div className="stat-card-metric-body">
+                  <div className="stat-card-value">
+                    <AnimatedNumber value={summary?.totalDays ?? 0} />
+                  </div>
+                  <p className="stat-card-caption">Days journaled</p>
+                </div>
+              </div>
+              <div className="stat-card stat-card--metric">
+                <div className="stat-card-icon-wrap" aria-hidden>
+                  <Star className="h-[18px] w-[18px]" strokeWidth={1.85} style={{ color: "var(--warning)" }} />
+                </div>
+                <div className="stat-card-metric-body">
+                  <div className="stat-card-value">
+                    <AnimatedNumber value={summary?.bestStreak ?? 0} />
+                  </div>
+                  <p className="stat-card-caption">Best streak</p>
+                </div>
+              </div>
+              <div className="stat-card stat-card--metric">
+                <div className="stat-card-icon-wrap" aria-hidden>
+                  <Mic className="h-[18px] w-[18px]" strokeWidth={1.85} style={{ color: "var(--accent)" }} />
+                </div>
+                <div className="stat-card-metric-body">
+                  <div className="stat-card-value">{formatRecorded(summary?.totalRecordedSec ?? 0)}</div>
+                  <p className="stat-card-caption">Time recorded</p>
+                </div>
+              </div>
+              <div className="stat-card stat-card--metric">
+                <div className="stat-card-icon-wrap" aria-hidden>
+                  <PencilLine className="h-[18px] w-[18px]" strokeWidth={1.85} style={{ color: "var(--accent)" }} />
+                </div>
+                <div className="stat-card-metric-body">
+                  <div className="stat-card-value">
+                    <AnimatedNumber value={summary?.totalWords ?? 0} />
+                  </div>
+                  <p className="stat-card-caption">Words written</p>
+                </div>
+              </div>
             </section>
+            )}
 
             <section className="stats-card stats-card--mood-trend stats-card-full rounded-xl border border-border-subtle p-6">
               <div className="stats-card-header">

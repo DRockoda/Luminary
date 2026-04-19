@@ -34,6 +34,7 @@ export const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      data-dialog-position={position}
       className={cn(
         "fixed z-50 bg-elevated border border-border-strong text-primary shadow-lg outline-none",
         position === "center"

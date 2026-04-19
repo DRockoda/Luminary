@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { api, apiErrorMessage } from "@/lib/api";
@@ -14,6 +14,7 @@ interface Announcement {
   linkLabel: string | null;
   color: Color;
   isActive: boolean;
+  isMaintenance: boolean;
   createdAt: string;
   expiresAt: string | null;
 }
@@ -31,6 +32,40 @@ export default function AdminAnnouncementsPage() {
     queryFn: async () =>
       (await api.get<{ announcements: Announcement[] }>("/api/admin/announcements")).data
         .announcements,
+  });
+
+  const isMaintenanceActive = useMemo(
+    () => (data ?? []).some((a) => a.isMaintenance && a.isActive),
+    [data],
+  );
+
+  const enableMaintenance = useMutation({
+    mutationFn: async () => {
+      await api.patch("/api/admin/announcements/deactivate-all");
+      await api.post("/api/admin/announcements", {
+        message: "We are currently performing maintenance. We will be back shortly.",
+        color: "warning",
+        isMaintenance: true,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "announcements"] });
+      qc.invalidateQueries({ queryKey: ["announcement", "active"] });
+      toast.success("Maintenance mode enabled");
+    },
+    onError: (err) => toast.error("Couldn't enable maintenance", apiErrorMessage(err)),
+  });
+
+  const disableMaintenance = useMutation({
+    mutationFn: async () => {
+      await api.patch("/api/admin/announcements/disable-maintenance");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "announcements"] });
+      qc.invalidateQueries({ queryKey: ["announcement", "active"] });
+      toast.success("Maintenance mode disabled");
+    },
+    onError: (err) => toast.error("Couldn't disable maintenance", apiErrorMessage(err)),
   });
 
   const create = useMutation({
@@ -84,6 +119,45 @@ export default function AdminAnnouncementsPage() {
       <p className="admin-page-subtitle">
         Show a banner at the top of every user's app. Only one is active at a time.
       </p>
+
+      <div className="admin-maintenance-card">
+        <div className="admin-maintenance-header">
+          <div>
+            <h3>Maintenance mode</h3>
+            <p>
+              Show a maintenance page to all users. They cannot access the journal app while this
+              is enabled. Use the admin console (this site) to turn it off.
+            </p>
+          </div>
+          <div className="admin-maintenance-toggle-wrapper">
+            {isMaintenanceActive ? (
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={disableMaintenance.isPending}
+                onClick={() => disableMaintenance.mutate()}
+              >
+                Disable maintenance mode
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={enableMaintenance.isPending}
+                onClick={() => enableMaintenance.mutate()}
+              >
+                Enable maintenance mode
+              </Button>
+            )}
+          </div>
+        </div>
+        {isMaintenanceActive && (
+          <div className="admin-maintenance-active-notice">
+            Maintenance mode is active. All users see the maintenance screen until you disable it
+            here.
+          </div>
+        )}
+      </div>
 
       <section className="admin-section">
         <h2 className="admin-section-title">New announcement</h2>
@@ -171,6 +245,9 @@ export default function AdminAnnouncementsPage() {
               <div>
                 <div className="admin-announce-meta">
                   <span className={`admin-pill admin-pill--${a.color}`}>{a.color}</span>
+                  {a.isMaintenance && (
+                    <span className="admin-pill admin-pill--warning">Maintenance</span>
+                  )}
                   {a.isActive && (
                     <span className="admin-pill admin-pill--success">Active</span>
                   )}

@@ -111,7 +111,7 @@ export function CalendarView({
               const searchHit = searchMatchDates?.has(iso) ?? false;
 
               return (
-                <div
+                <motion.div
                   key={iso}
                   tabIndex={isFuture ? -1 : 0}
                   onClick={() => {
@@ -124,6 +124,9 @@ export function CalendarView({
                       onDayClick(iso);
                     }
                   }}
+                  whileHover={isFuture ? undefined : { scale: 1.01 }}
+                  whileTap={isFuture ? undefined : { scale: 0.99 }}
+                  transition={{ duration: 0.12 }}
                   className={cn(
                     "calendar-day-cell",
                     !isFuture && "is-interactive",
@@ -169,7 +172,7 @@ export function CalendarView({
                       <MoodDot mood={mood} size={8} />
                     </span>
                   )}
-                </div>
+                </motion.div>
               );
             })}
           </div>

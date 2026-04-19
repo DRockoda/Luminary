@@ -39,6 +39,8 @@ export interface ActiveAnnouncement {
     link?: string | null;
     linkLabel?: string | null;
     color: "info" | "success" | "warning" | "danger" | "accent";
+    /** When true, the web app shows the full-screen maintenance experience instead of the journal UI. */
+    isMaintenance?: boolean;
     createdAt: string;
     expiresAt?: string | null;
 }

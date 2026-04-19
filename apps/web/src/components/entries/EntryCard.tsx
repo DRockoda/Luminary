@@ -14,7 +14,7 @@ import {
   Trash2,
   Video,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -66,7 +66,7 @@ async function copyToClipboard(text: string) {
   }
 }
 
-export function EntryCard({
+function EntryCardInner({
   entry,
   onEdit,
   onRequestReRecord,
@@ -395,3 +395,5 @@ export function EntryCard({
     </>
   );
 }
+
+export const EntryCard = memo(EntryCardInner);

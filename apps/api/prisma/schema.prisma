@@ -112,17 +112,19 @@ model AdminUser {
 }
 
 model Announcement {
-  id         String    @id @default(cuid())
-  message    String
-  link       String?
-  linkLabel  String?
-  color      String    // "info" | "success" | "warning" | "danger" | "accent"
-  isActive   Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  expiresAt  DateTime?
-  createdBy  String
+  id              String    @id @default(cuid())
+  message         String
+  link            String?
+  linkLabel       String?
+  color           String    // "info" | "success" | "warning" | "danger" | "accent"
+  isActive        Boolean   @default(true)
+  isMaintenance   Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime?
+  createdBy       String
 
   @@index([isActive, createdAt])
+  @@index([isMaintenance, isActive])
 }
 
 model UserWarning {

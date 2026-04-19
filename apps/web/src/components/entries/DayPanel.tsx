@@ -1,6 +1,7 @@
 import type { JournalEntry } from "@luminary/shared";
 import { dayMoodFromEntries, getMoodEmoji, getMoodLabel } from "@luminary/shared";
 import { format, isAfter } from "date-fns";
+import { motion } from "framer-motion";
 import { ArrowLeft, Pencil, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { AddEntrySheet, type AddEntryMode } from "@/components/entries/AddEntrySheet";
@@ -109,19 +110,42 @@ export function DayPanel({ date, variant, onClose, isMobile = false }: Props) {
         ) : entries.length === 0 ? (
           <EmptyState isFuture={isFuture} />
         ) : (
-          <div className="flex flex-col gap-2.5">
+          <motion.div
+            className="flex flex-col gap-2.5"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: { staggerChildren: 0.06 },
+              },
+            }}
+            initial="hidden"
+            animate="show"
+          >
             {entries.map((e) => (
-              <EntryCard
+              <motion.div
                 key={e.id}
-                entry={e}
-                onEdit={(entry) => setEditing(entry)}
-                onRequestReRecord={(entry) => {
-                  setReplaceEntryId(entry.id);
-                  setAddMode(entry.type === "audio" ? "audio" : "video");
+                variants={{
+                  hidden: { opacity: 0, y: 12, scale: 0.98 },
+                  show: {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+                  },
                 }}
-              />
+              >
+                <EntryCard
+                  entry={e}
+                  onEdit={(entry) => setEditing(entry)}
+                  onRequestReRecord={(entry) => {
+                    setReplaceEntryId(entry.id);
+                    setAddMode(entry.type === "audio" ? "audio" : "video");
+                  }}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 

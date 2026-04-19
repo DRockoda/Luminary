@@ -8,6 +8,7 @@ export function HotToaster() {
       containerClassName="luminary-toaster"
       toastOptions={{
         duration: 3000,
+        className: "luminary-toast-anim",
         style: {
           background: "var(--bg-elevated)",
           color: "var(--text-primary)",

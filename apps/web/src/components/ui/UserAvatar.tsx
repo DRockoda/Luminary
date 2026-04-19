@@ -14,6 +14,10 @@ export function UserAvatar({ user, size = 36 }: { user: UserAvatarUser; size?: n
       <img
         src={mediaFullUrl(user.avatarUrl)}
         alt=""
+        loading="lazy"
+        decoding="async"
+        width={size}
+        height={size}
         className="shrink-0 rounded-full object-cover"
         style={{ width: size, height: size }}
       />
@@ -27,6 +31,10 @@ export function UserAvatar({ user, size = 36 }: { user: UserAvatarUser; size?: n
       <img
         src={libUrl}
         alt=""
+        loading="lazy"
+        decoding="async"
+        width={size}
+        height={size}
         className="shrink-0 rounded-full"
         style={{ width: size, height: size }}
       />

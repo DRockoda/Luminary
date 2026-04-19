@@ -25,3 +25,11 @@ export function resolveApiBaseURL(): string {
 
   return raw;
 }
+
+/** Public URL for active announcement (maintenance gate); works with Vite proxy when base is empty. */
+export function activeAnnouncementUrl(): string {
+  const base = resolveApiBaseURL().trim();
+  const path = "/api/announcements/active";
+  if (!base) return path;
+  return `${base.replace(/\/$/, "")}${path}`;
+}

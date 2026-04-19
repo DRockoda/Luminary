@@ -409,6 +409,7 @@ const announcementSchema = z.object({
   linkLabel: z.string().trim().max(80).optional(),
   color: z.enum(["info", "success", "warning", "danger", "accent"]),
   expiresAt: z.string().datetime().or(z.literal("")).optional(),
+  isMaintenance: z.boolean().optional(),
 });
 
 router.get("/announcements", async (_req, res, next) => {
@@ -425,6 +426,7 @@ router.get("/announcements", async (_req, res, next) => {
         linkLabel: a.linkLabel,
         color: a.color,
         isActive: a.isActive,
+        isMaintenance: a.isMaintenance,
         createdAt: a.createdAt.toISOString(),
         expiresAt: a.expiresAt?.toISOString() ?? null,
       })),
@@ -451,6 +453,7 @@ router.post("/announcements", async (req, res, next) => {
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
         createdBy: req.adminId!,
         isActive: true,
+        isMaintenance: body.isMaintenance ?? false,
       },
     });
     res.json({
@@ -461,10 +464,34 @@ router.post("/announcements", async (req, res, next) => {
         linkLabel: created.linkLabel,
         color: created.color,
         isActive: created.isActive,
+        isMaintenance: created.isMaintenance,
         createdAt: created.createdAt.toISOString(),
         expiresAt: created.expiresAt?.toISOString() ?? null,
       },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/announcements/deactivate-all", async (_req, res, next) => {
+  try {
+    await prisma.announcement.updateMany({
+      data: { isActive: false },
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/announcements/disable-maintenance", async (_req, res, next) => {
+  try {
+    await prisma.announcement.updateMany({
+      where: { isMaintenance: true },
+      data: { isMaintenance: false, isActive: false },
+    });
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }
@@ -487,6 +514,7 @@ router.patch("/announcements/:id", async (req, res, next) => {
         linkLabel: updated.linkLabel,
         color: updated.color,
         isActive: updated.isActive,
+        isMaintenance: updated.isMaintenance,
         createdAt: updated.createdAt.toISOString(),
         expiresAt: updated.expiresAt?.toISOString() ?? null,
       },

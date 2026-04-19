@@ -76,7 +76,7 @@ export default function CalendarPage() {
   const from = useMemo(() => format(startOfMonth(month), "yyyy-MM-dd"), [month]);
   const to = useMemo(() => format(endOfMonth(month), "yyyy-MM-dd"), [month]);
 
-  const { data: entries = [] } = useEntriesRange(from, to);
+  const { data: entries = [], isPending: monthEntriesPending } = useEntriesRange(from, to);
 
   const chartRange = useMemo(() => getDateRange(period as StatsPeriod), [period]);
   const chartFrom = useMemo(() => toIso(chartRange.from), [chartRange.from]);
@@ -300,16 +300,24 @@ export default function CalendarPage() {
         </header>
 
         <div className="mt-6 space-y-6">
-          <CalendarView
-            month={month}
-            moodsByDate={moodsByDate}
-            entries={entries}
-            selectedDate={selectedDate}
-            onDayClick={handleDayClick}
-            navDir={navDir}
-            calendarSwipeHandlers={swipe}
-            searchMatchDates={searchMatchDates}
-          />
+          {monthEntriesPending ? (
+            <div className="calendar-skeleton" aria-busy aria-label="Loading calendar">
+              {Array.from({ length: 35 }).map((_, i) => (
+                <div key={i} className="skeleton-cell skeleton-shimmer" />
+              ))}
+            </div>
+          ) : (
+            <CalendarView
+              month={month}
+              moodsByDate={moodsByDate}
+              entries={entries}
+              selectedDate={selectedDate}
+              onDayClick={handleDayClick}
+              navDir={navDir}
+              calendarSwipeHandlers={swipe}
+              searchMatchDates={searchMatchDates}
+            />
+          )}
 
           <CalendarMoodLineCard
             entries={chartEntries}

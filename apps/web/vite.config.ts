@@ -9,6 +9,26 @@ export default defineConfig(({ mode }) => {
     env.VITE_DEV_API_PROXY?.trim() || "http://127.0.0.1:3000";
 
   return {
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("framer-motion")) return "motion";
+          if (id.includes("recharts")) return "charts";
+          if (id.includes("@radix-ui")) return "radix";
+          if (
+            id.includes("node_modules/react-dom") ||
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-router")
+          ) {
+            return "vendor";
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
   plugins: [
     react(),
     VitePWA({

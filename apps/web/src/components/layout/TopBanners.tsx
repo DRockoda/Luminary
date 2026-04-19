@@ -58,7 +58,8 @@ export function TopBanners() {
     setAnnDismissed(true);
   }
 
-  const showAnnouncement = !!announcement && !annDismissed;
+  const showAnnouncement =
+    !!announcement && !annDismissed && !announcement.isMaintenance;
 
   return (
     <div ref={ref} className="top-banners">

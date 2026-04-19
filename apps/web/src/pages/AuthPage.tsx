@@ -199,7 +199,12 @@ export default function AuthPage() {
                 </p>
               )}
 
-              <button type="submit" className="auth-submit-btn" disabled={loading}>
+              <button
+                type="submit"
+                className="auth-submit-btn"
+                disabled={loading}
+                onMouseEnter={() => void import("@/pages/CalendarPage")}
+              >
                 {loading ? (
                   <Spinner />
                 ) : mode === "signup" ? (
