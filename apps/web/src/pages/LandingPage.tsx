@@ -21,6 +21,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, apiErrorMessage } from "@/lib/api";
+import { InstallButton } from "@/components/pwa/InstallButton";
 
 import "./LandingPage.css";
 
@@ -298,6 +299,7 @@ export default function LandingPage() {
                 <Play className="h-4 w-4" strokeWidth={2} />
                 Watch demo
               </a>
+              <InstallButton variant="hero" />
             </div>
             <div className="hero-trust-row">
               <span className="hero-trust-item">
@@ -594,6 +596,10 @@ function Footer() {
             <a href="#" aria-label="GitHub">
               <Github className="h-4 w-4" strokeWidth={1.75} />
             </a>
+          </div>
+          <div className="footer-install-section">
+            <p className="footer-install-hint">Available on all devices</p>
+            <InstallButton variant="footer" />
           </div>
         </div>
         <div className="landing-footer-cols">

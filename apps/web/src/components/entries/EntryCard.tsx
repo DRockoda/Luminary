@@ -181,7 +181,7 @@ function EntryCardInner({
 
   return (
     <>
-      <div className="group relative w-full rounded-lg border border-border-subtle bg-surface p-3.5 transition-colors hover:border-border-default md:mb-2.5">
+      <div className="entry-card group relative w-full rounded-lg border border-border-subtle bg-surface p-3.5 transition-colors hover:border-border-default md:mb-2.5">
         <div className="flex items-start gap-3">
           <button
             type="button"

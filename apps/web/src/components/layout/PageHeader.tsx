@@ -1,18 +1,21 @@
 import { useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
   description: string;
   actions?: React.ReactNode;
+  className?: string;
 }
 
-export function PageHeader({ title, description, actions }: PageHeaderProps) {
+export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
   useEffect(() => {
     document.title = `${title} — Luminary`;
   }, [title]);
 
   return (
     <div
+      className={cn(className)}
       style={{
         display: "flex",
         alignItems: "flex-start",

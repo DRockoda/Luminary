@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-app flex flex-col">
+    <div className="app-shell min-h-screen bg-app flex flex-col">
       <TopBanners />
       <div className="flex flex-1 min-h-0">
       <aside className="sidebar hidden md:flex fixed left-0 top-[var(--top-banners-height,0px)] bottom-0 w-[240px] flex-col border-r border-border-default bg-surface z-40 py-5">
@@ -175,27 +175,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 pb-[56px] md:pb-0 md:pl-[240px]">{children}</main>
+      <main className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0 md:pl-[240px]">
+        {children}
+      </main>
       </div>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[56px] border-t border-border-default bg-elevated z-40 flex items-stretch">
+      <nav className="bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 flex min-h-[56px] items-stretch border-t border-border-default bg-elevated pb-[env(safe-area-inset-bottom,0px)]">
         {[...MAIN_NAV, ...SETTINGS_NAV].map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
               cn(
-                "relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                isActive ? "text-accent" : "text-secondary hover:text-primary",
+                "bottom-nav-item relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors duration-200 ease-out",
+                isActive ? "is-active text-accent" : "text-secondary hover:text-primary",
               )
             }
           >
-            <item.icon className="h-5 w-5" strokeWidth={1.75} />
-            <span>{item.label}</span>
-            {item.to === "/app/trash" && trashCount > 0 && (
-              <span className="absolute right-2 top-1 text-[10px] font-mono text-tertiary">
-                {trashCount}
-              </span>
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <motion.span
+                    layoutId="bottom-nav-active-indicator"
+                    className="bottom-nav-active-indicator"
+                    transition={{ type: "spring", stiffness: 380, damping: 34 }}
+                  />
+                )}
+                <item.icon className="h-5 w-5" strokeWidth={1.75} />
+                <span>{item.label}</span>
+                {item.to === "/app/trash" && trashCount > 0 && (
+                  <span className="absolute right-2 top-1 text-[10px] font-mono text-tertiary">
+                    {trashCount}
+                  </span>
+                )}
+              </>
             )}
           </NavLink>
         ))}

@@ -195,10 +195,11 @@ export default function CalendarPage() {
       <PageContainer>
         <header className="mb-0">
           <PageHeader
+            className="calendar-page-header-inner"
             title="My Journal"
             description="Your entries, moods, and memories — one day at a time."
             actions={
-              <>
+              <div className="calendar-header-actions flex w-full flex-col items-stretch gap-2 md:w-auto md:flex-row md:items-center md:justify-end">
                 <div className="relative w-full min-w-0 md:w-auto">
                   <CalendarSearch query={searchQuery} onChange={setSearchQuery} />
 
@@ -258,13 +259,13 @@ export default function CalendarPage() {
 
               <Button
                 variant="primary"
-                className="h-9 rounded-md px-4 text-[13px] font-semibold"
+                className="h-9 shrink-0 rounded-md px-4 text-[13px] font-semibold"
                 onClick={handleAddEntry}
               >
                 <Plus className="h-3.5 w-3.5" strokeWidth={2} />
                 Add Entry
               </Button>
-              </>
+              </div>
             }
           />
 

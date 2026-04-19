@@ -25,11 +25,11 @@ export function MoodDistributionBars({
         {MOOD_SCALE.map((mood) => {
           const pct = distribution[mood.value] ?? 0;
           return (
-            <div key={mood.value} className="flex items-center gap-3">
+            <div key={mood.value} className="mood-bar-row flex items-center gap-3">
               <span className="w-4 text-base leading-none" aria-hidden>
                 {mood.emoji}
               </span>
-              <span className="w-16 text-[13px] text-secondary">{mood.label}</span>
+              <span className="mood-label text-[13px] text-secondary">{mood.label}</span>
               <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-active">
                 <motion.div
                   initial={{ width: 0 }}

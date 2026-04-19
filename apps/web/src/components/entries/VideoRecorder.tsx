@@ -361,16 +361,23 @@ export function VideoRecorder({
             </div>
 
             {(phase === "recording" || phase === "paused") && (
-              <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2">
-                <span className="rounded-md bg-black/55 px-3 py-1 font-mono text-[11px] font-medium tabular-nums text-white backdrop-blur-md">
-                  {displayTime}
-                </span>
-              </div>
-            )}
-
-            {phase === "paused" && (
-              <div className="pointer-events-none absolute left-1/2 top-12 z-10 -translate-x-1/2 rounded-md bg-black/55 px-2 py-1 text-xs font-medium text-white backdrop-blur-md">
-                Paused
+              <div className="pointer-events-none absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 px-4 py-1.5 font-mono text-base font-medium tabular-nums text-white backdrop-blur-sm">
+                {phase === "recording" && (
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full bg-[#EF4444]"
+                    style={{ animation: "statusPulse 1s ease-in-out infinite" }}
+                    aria-hidden
+                  />
+                )}
+                {phase === "paused" && (
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-[#F59E0B]" aria-hidden />
+                )}
+                <span>{displayTime}</span>
+                {phase === "paused" && (
+                  <span className="text-[11px] font-sans font-medium tracking-wide text-white/70">
+                    PAUSED
+                  </span>
+                )}
               </div>
             )}
           </>
@@ -390,7 +397,7 @@ export function VideoRecorder({
         )}
 
         {(phase === "recording" || phase === "paused") && !error && (
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4">
+          <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-center gap-5 px-4">
             {phase === "recording" ? (
               <button
                 type="button"

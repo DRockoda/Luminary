@@ -8,7 +8,7 @@ export default function DayPage() {
   const navigate = useNavigate();
   return (
     <div className="main-content h-[calc(100vh-56px)] md:h-screen">
-      <PageContainer className="flex h-full min-h-0 flex-col px-4 py-4 md:px-10 md:py-8">
+      <PageContainer className="flex h-full min-h-0 flex-col px-0 py-0 md:px-10 md:py-8">
         <DayPanel
           date={date}
           variant="page"

@@ -43,7 +43,7 @@ export function DayPanel({ date, variant, onClose, isMobile = false }: Props) {
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-base",
+        "relative flex flex-col h-full bg-base",
         isDrawer && "border-l border-border-default",
       )}
     >
@@ -89,6 +89,17 @@ export function DayPanel({ date, variant, onClose, isMobile = false }: Props) {
           </Button>
         )}
       </header>
+
+      {isMobile && onClose && (
+        <button
+          type="button"
+          className="day-panel-close-btn"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
 
       {!isFuture && entries.length > 0 && overallMood && (
         <div className="border-b border-border-subtle px-5 py-2.5 md:px-6">
@@ -169,7 +180,7 @@ export function DayPanel({ date, variant, onClose, isMobile = false }: Props) {
       >
         <DialogContent
           position={isMobile ? "bottom-sheet" : "center"}
-          className="md:max-w-[620px]"
+          className="entry-modal md:max-w-[620px]"
         >
           <DialogHeader>
             <DialogTitle>Edit entry</DialogTitle>

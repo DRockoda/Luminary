@@ -13,6 +13,7 @@ import {
   Upload,
   User,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DriveConnectBanner } from "@/components/settings/DriveConnectBanner";
@@ -41,6 +42,7 @@ import {
 } from "@/lib/theme";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { InstallButton } from "@/components/pwa/InstallButton";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -263,6 +265,14 @@ export default function SettingsPage() {
         </nav>
 
         <div className="settings-content">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={section}
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+            >
           {section === "profile" && (
             <>
               <div ref={avatarPanelRef}>
@@ -404,64 +414,79 @@ export default function SettingsPage() {
           )}
 
           {section === "appearance" && (
-            <Section title="Appearance">
-              <div className="border-b border-border-subtle px-4 py-4 last:border-b-0">
-                <label
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    color: "var(--text-tertiary)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    display: "block",
-                    marginBottom: "12px",
-                  }}
-                >
-                  Color Theme
-                </label>
-                <div className="theme-color-picker">
-                  {THEME_ORDER.map((key) => {
-                    const theme = THEMES[key];
-                    const active = activeTheme === key;
-                    return (
-                      <button
-                        key={key}
-                        className={cn("theme-color-swatch", active && "is-active")}
-                        onClick={() => void patchColorTheme(key)}
-                        title={theme.name}
-                        aria-label={`${theme.name} theme${active ? " (active)" : ""}`}
-                        style={
-                          {
-                            background: theme.accent,
-                            "--swatch-color": theme.accent,
-                          } as React.CSSProperties
-                        }
-                        type="button"
-                      />
-                    );
-                  })}
+            <>
+              <Section title="Appearance">
+                <div className="border-b border-border-subtle px-4 py-4 last:border-b-0">
+                  <label
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      color: "var(--text-tertiary)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      display: "block",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    Color Theme
+                  </label>
+                  <div className="theme-color-picker">
+                    {THEME_ORDER.map((key) => {
+                      const theme = THEMES[key];
+                      const active = activeTheme === key;
+                      return (
+                        <button
+                          key={key}
+                          className={cn("theme-color-swatch", active && "is-active")}
+                          onClick={() => void patchColorTheme(key)}
+                          title={theme.name}
+                          aria-label={`${theme.name} theme${active ? " (active)" : ""}`}
+                          style={
+                            {
+                              background: theme.accent,
+                              "--swatch-color": theme.accent,
+                            } as React.CSSProperties
+                          }
+                          type="button"
+                        />
+                      );
+                    })}
+                  </div>
+                  <p style={{ fontSize: "12px", color: "var(--text-tertiary)", marginTop: "10px" }}>
+                    {THEMES[activeTheme].name} — {THEMES[activeTheme].label}
+                  </p>
                 </div>
-                <p style={{ fontSize: "12px", color: "var(--text-tertiary)", marginTop: "10px" }}>
-                  {THEMES[activeTheme].name} — {THEMES[activeTheme].label}
-                </p>
-              </div>
-              <Row label="Font size">
-                <ChipGroup>
-                  {(["small", "medium", "large"] as const).map((f) => (
-                    <Chip
-                      key={f}
-                      active={fontSize === f}
-                      onClick={() => {
-                        setFontSize(f);
-                        applyFontSize(f);
-                      }}
-                    >
-                      <span className="capitalize">{f}</span>
-                    </Chip>
-                  ))}
-                </ChipGroup>
-              </Row>
-            </Section>
+                <Row label="Font size">
+                  <ChipGroup>
+                    {(["small", "medium", "large"] as const).map((f) => (
+                      <Chip
+                        key={f}
+                        active={fontSize === f}
+                        onClick={() => {
+                          setFontSize(f);
+                          applyFontSize(f);
+                        }}
+                      >
+                        <span className="capitalize">{f}</span>
+                      </Chip>
+                    ))}
+                  </ChipGroup>
+                </Row>
+              </Section>
+              <Section title="Install app">
+                <div className="settings-row">
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: "13px", fontWeight: 500, margin: "0 0 2px" }}>
+                      Add to Home Screen
+                    </p>
+                    <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: 0 }}>
+                      Install Luminary as an app for faster access and offline use.
+                    </p>
+                  </div>
+                  <InstallButton />
+                </div>
+              </Section>
+            </>
           )}
 
           {section === "notifications" && (
@@ -519,12 +544,14 @@ export default function SettingsPage() {
           {section === "storage" && <StorageSyncPanel />}
 
           {section === "export" && <ExportPanel />}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
       </PageContainer>
 
       {dirty && (
-        <div className="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-40 flex gap-2 items-center bg-elevated border border-border-strong rounded-lg shadow-md px-3 py-2">
+        <div className="settings-unsaved-bar fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-border-strong bg-elevated px-3 py-2 shadow-md md:bottom-6">
           <span className="text-sm text-secondary">Unsaved changes</span>
           <Button variant="ghost" size="sm" onClick={logout.bind(null)}>
             Sign out

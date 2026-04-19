@@ -35,14 +35,17 @@ export function AddEntrySheet({
           if (!o) onClose();
         }}
       >
-        <DialogContent position={isMobile ? "bottom-sheet" : "center"}>
+        <DialogContent
+          position={isMobile ? "bottom-sheet" : "center"}
+          className="entry-modal"
+        >
           <DialogHeader>
             <DialogTitle>Add an entry</DialogTitle>
             <div className="text-base text-secondary">
               What would you like to capture today?
             </div>
           </DialogHeader>
-          <div className="grid grid-cols-3 gap-2.5 mt-1">
+          <div className="entry-type-options mt-1 grid grid-cols-3 gap-2.5">
             <PickerCard
               icon={Mic}
               label="Audio"
@@ -71,7 +74,10 @@ export function AddEntrySheet({
           if (!o) onClose();
         }}
       >
-        <DialogContent position={isMobile ? "bottom-sheet" : "center"}>
+        <DialogContent
+          position={isMobile ? "bottom-sheet" : "center"}
+          className="entry-modal"
+        >
           <DialogHeader>
             <DialogTitle>Record audio</DialogTitle>
           </DialogHeader>
@@ -92,7 +98,7 @@ export function AddEntrySheet({
       >
         <DialogContent
           position={isMobile ? "bottom-sheet" : "center"}
-          className="md:max-w-[640px]"
+          className="entry-modal md:max-w-[640px]"
         >
           <DialogHeader>
             <DialogTitle>Record video</DialogTitle>
@@ -114,7 +120,7 @@ export function AddEntrySheet({
       >
         <DialogContent
           position={isMobile ? "bottom-sheet" : "center"}
-          className="md:max-w-[620px]"
+          className="entry-modal md:max-w-[620px]"
         >
           <DialogHeader>
             <DialogTitle>Write an entry</DialogTitle>
@@ -141,7 +147,7 @@ function PickerCard({
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col items-center justify-center gap-1.5 rounded-lg border border-border-default bg-surface px-4 py-6 hover:border-accent-border hover:bg-accent-subtle transition-colors"
+      className="entry-type-option-card group flex flex-col items-center justify-center gap-1.5 rounded-lg border border-border-default bg-surface px-4 py-6 transition-colors hover:border-accent-border hover:bg-accent-subtle"
     >
       <Icon
         className="h-6 w-6 text-secondary group-hover:text-accent transition-colors"

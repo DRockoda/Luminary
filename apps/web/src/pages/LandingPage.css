@@ -930,6 +930,48 @@
   .feedback-section { grid-template-columns: 1fr; gap: 24px; }
   .landing-footer-inner { grid-template-columns: 1fr; gap: 32px; }
 }
+.footer-install-section {
+  margin-top: 18px;
+}
+.footer-install-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+}
+
+@media (max-width: 768px) {
+  .landing-nav-inner {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .landing-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .hero {
+    padding-left: 16px;
+    padding-right: 16px;
+    gap: 32px;
+  }
+  .hero-visual {
+    max-height: 280px;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+  }
+  .hero-ctas {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+  }
+  .hero-ctas .landing-btn-primary,
+  .hero-ctas .landing-btn-secondary,
+  .hero-ctas .hero-install-btn {
+    width: 100%;
+    max-width: 320px;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 600px) {
   .landing-section { padding: 56px 0; }
   .landing-hero-section { padding: 24px 0 48px; }
