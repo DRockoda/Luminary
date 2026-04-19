@@ -339,24 +339,25 @@
 }
 
 /* ─────────── Admin theme (scoped — ignores user :root color picks) ─────────── */
+/* Accent matches default Luminary purple; layout stays admin-only (dark nav + light main). */
 .admin-theme {
-  --accent: #475569;
-  --accent-hover: #64748b;
-  --accent-subtle: rgba(71, 85, 105, 0.12);
-  --accent-border: rgba(71, 85, 105, 0.28);
-  --today-bg: #334155;
+  --accent: #7c6ff7;
+  --accent-hover: #9389f8;
+  --accent-subtle: rgba(124, 111, 247, 0.12);
+  --accent-border: rgba(124, 111, 247, 0.28);
+  --today-bg: #7c6ff7;
   --today-text: #ffffff;
-  --heatmap-0: #e2e8f0;
-  --heatmap-1: #cbd5e1;
-  --heatmap-2: #94a3b8;
-  --heatmap-3: #475569;
+  --heatmap-0: #ededef;
+  --heatmap-1: #c4bffa;
+  --heatmap-2: #9d95f5;
+  --heatmap-3: #6355e8;
 
-  --bg-app: #f1f5f9;
+  --bg-app: #f4f4f6;
   --bg-base: #ffffff;
-  --bg-surface: #f8fafc;
+  --bg-surface: #fafafa;
   --bg-elevated: #ffffff;
-  --bg-hover: #f1f5f9;
-  --bg-active: #e2e8f0;
+  --bg-hover: #f4f4f6;
+  --bg-active: #ededef;
 
   --border-subtle: rgba(15, 23, 42, 0.06);
   --border-default: rgba(15, 23, 42, 0.1);
@@ -386,8 +387,8 @@
   color: #94a3b8;
 }
 .admin-theme .admin-sidebar-mark {
-  background: linear-gradient(135deg, #64748b, #475569);
-  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #ff7eb6));
+  box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 .admin-theme .admin-sidebar-link {
   color: #cbd5e1;
@@ -397,11 +398,11 @@
   color: #f8fafc;
 }
 .admin-theme .admin-sidebar-link.is-active {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(124, 111, 247, 0.18);
   color: #ffffff;
 }
 .admin-theme .admin-sidebar-link-bar {
-  background: #94a3b8;
+  background: var(--accent);
 }
 .admin-theme .admin-sidebar-footer {
   border-top-color: rgba(255, 255, 255, 0.08);
@@ -413,7 +414,7 @@
   color: #94a3b8;
 }
 .admin-theme .admin-sidebar-avatar {
-  background: #475569;
+  background: var(--accent);
 }
 .admin-theme .admin-sidebar-logout {
   color: #cbd5e1;
