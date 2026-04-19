@@ -4,10 +4,10 @@ A private, encrypted journaling app. Capture your days in audio, video, or text.
 
 ## Tech stack
 
-- **Frontend:** React + TypeScript + Vite + Tailwind CSS
-- **Backend:** Node.js + Express + TypeScript
-- **Database:** SQLite + Prisma ORM (local dev); you can point `DATABASE_URL` at PostgreSQL if you change the Prisma provider
-- **Auth:** JWT + bcrypt
+- **Frontend:** React + TypeScript + Vite + Tailwind CSS (Netlify-ready, see `netlify.toml`)
+- **Backend:** Node.js + Express + TypeScript (Vercel serverless via `serverless-http`, see `apps/api/api/index.ts`)
+- **Database:** PostgreSQL + Prisma ORM (Supabase or local Docker; `DATABASE_URL` + `DIRECT_URL` in `apps/api/prisma/schema.prisma`)
+- **Auth:** JWT + bcrypt (httpOnly cookies; `COOKIE_SAMESITE` for cross-origin SPA/API)
 - **Email:** Brevo (transactional email)
 - **Storage:** Google Drive API (App Data folder)
 - **Admin:** JWT-protected admin dashboard
@@ -18,6 +18,7 @@ A private, encrypted journaling app. Capture your days in audio, video, or text.
 
 - Node.js 18+
 - npm (workspaces)
+- PostgreSQL (e.g. `docker compose up -d` in this repo for local Postgres)
 
 ### Setup
 
@@ -38,23 +39,16 @@ A private, encrypted journaling app. Capture your days in audio, video, or text.
 
    ```bash
    cp apps/api/.env.example apps/api/.env
-   # Edit apps/api/.env with your values (especially JWT_* and ENCRYPTION_SERVER_KEY)
+   # Edit apps/api/.env — set DATABASE_URL, DIRECT_URL, JWT_*, ENCRYPTION_SERVER_KEY, etc.
 
    cp apps/web/.env.example apps/web/.env
-   # Edit apps/web/.env if your API is not on http://localhost:3000
+   # For local dev, leave VITE_API_URL empty to use the Vite dev proxy to the API.
    ```
 
-4. Set up the database (SQLite file under `apps/api/prisma/`)
+4. Apply the database schema
 
    ```bash
-   npm run db:push
-   ```
-
-   Or from `apps/api`:
-
-   ```bash
-   npx prisma db push
-   npx prisma generate
+   npm run db:migrate:deploy
    ```
 
 5. Create the first admin account
@@ -75,7 +69,13 @@ A private, encrypted journaling app. Capture your days in audio, video, or text.
 
 ## Environment variables
 
-See `apps/api/.env.example` and `apps/web/.env.example` for all variables the apps read.
+See `apps/api/.env.example` and `apps/web/.env.example` for local development.
+
+For production placeholders, see `apps/api/.env.production.example` and `apps/web/.env.production.example`.
+
+## Free-tier deploy (Supabase + Vercel + Netlify)
+
+See [docs/deploy-free-tier.md](docs/deploy-free-tier.md).
 
 ## License
 

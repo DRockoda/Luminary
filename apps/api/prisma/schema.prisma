@@ -3,8 +3,10 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // PgBouncer pooler (Supabase) for runtime; direct connection for migrations / prisma migrate
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

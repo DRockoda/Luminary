@@ -1,9 +1,14 @@
 import react from "@vitejs/plugin-react";
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, __dirname, "");
+  const apiProxyTarget =
+    env.VITE_DEV_API_PROXY?.trim() || "http://127.0.0.1:3000";
+
+  return {
   plugins: [
     react(),
     VitePWA({
@@ -83,14 +88,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: process.env.VITE_API_URL ?? "http://localhost:3000",
+        target: apiProxyTarget,
         changeOrigin: true,
         cookieDomainRewrite: "localhost",
       },
       "/uploads": {
-        target: process.env.VITE_API_URL ?? "http://localhost:3000",
+        target: apiProxyTarget,
         changeOrigin: true,
       },
     },
   },
+  };
 });

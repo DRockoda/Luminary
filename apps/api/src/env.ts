@@ -26,8 +26,25 @@ export const env = {
   GOOGLE_REDIRECT_URI:
     process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:3000/api/drive/callback",
   CORS_ORIGIN: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+  /**
+   * Use `none` when the SPA is on a different host than the API (e.g. Netlify → Vercel)
+   * so browsers send cookies on credentialed XHR. Requires `Secure` (enabled in production).
+   */
+  COOKIE_SAMESITE: ((): "strict" | "lax" | "none" => {
+    const v = (process.env.COOKIE_SAMESITE ?? "strict").toLowerCase();
+    if (v === "lax" || v === "none" || v === "strict") return v;
+    return "strict";
+  })(),
   COOKIE_DOMAIN: process.env.COOKIE_DOMAIN ?? "localhost",
-  UPLOAD_DIR: process.env.UPLOAD_DIR ?? "./uploads",
+  /**
+   * Vercel serverless allows writes only under `/tmp`. Creating `./uploads` at
+   * app import time throws (EACCES / EROFS) and breaks every route with 500.
+   */
+  UPLOAD_DIR: process.env.UPLOAD_DIR
+    ? process.env.UPLOAD_DIR
+    : process.env.VERCEL
+      ? "/tmp/uploads"
+      : "./uploads",
   ADMIN_JWT_SECRET: required(
     "ADMIN_JWT_SECRET",
     "dev_admin_jwt_secret_change_me_aaaabbbbccccddddeeeeffff111122223333",

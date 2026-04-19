@@ -1,0 +1,21 @@
+# Monorepo: build shared package + Vite app, publish web dist.
+# In Netlify UI: base directory can stay repo root, or set to match this file location.
+
+[build]
+  command = "npm ci && npm --workspace @luminary/shared run build && npm --workspace @luminary/web run build"
+  publish = "apps/web/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA — client-side routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[context.production.environment]
+  VITE_APP_ENV = "production"
+
+[context.deploy-preview.environment]
+  VITE_APP_ENV = "preview"

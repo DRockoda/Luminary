@@ -1,73 +1,12 @@
-import cookieParser from "cookie-parser";
-import cors from "cors";
-import express from "express";
-import fs from "node:fs";
-import helmet from "helmet";
-import path from "node:path";
 import { env } from "./env.js";
-import { errorHandler, notFoundHandler } from "./middleware/error.js";
-import adminRouter from "./routes/admin.js";
-import announcementsRouter from "./routes/announcements.js";
-import authRouter from "./routes/auth.js";
-import driveRouter from "./routes/drive.js";
-import entriesRouter from "./routes/entries.js";
-import exportRouter from "./routes/export.js";
-import feedbackRouter from "./routes/feedback.js";
-import moodRouter from "./routes/mood.js";
-import quotesRouter from "./routes/quotes.js";
-import settingsRouter from "./routes/settings.js";
-import statsRouter from "./routes/stats.js";
-import trashRouter from "./routes/trash.js";
-import userRouter from "./routes/user.js";
-import warningsRouter from "./routes/warnings.js";
+import { app } from "./app.js";
 import { startTrashPurgeScheduler } from "./services/trashPurge.js";
 
-const app = express();
-
-app.disable("x-powered-by");
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  }),
-);
-app.use(
-  cors({
-    origin: env.CORS_ORIGIN.split(",").map((s) => s.trim()),
-    credentials: true,
-  }),
-);
-app.use(express.json({ limit: "2mb" }));
-app.use(cookieParser());
-
-// Serve uploaded media (dev-only convenience — in prod use a CDN / Drive)
-fs.mkdirSync(env.UPLOAD_DIR, { recursive: true });
-app.use("/uploads", express.static(path.resolve(env.UPLOAD_DIR)));
-
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, service: "luminary-api", uptime: process.uptime() });
-});
-
-app.use("/api/quotes", quotesRouter);
-app.use("/api/feedback", feedbackRouter);
-app.use("/api/announcements", announcementsRouter);
-
-app.use("/api/auth", authRouter);
-app.use("/api/entries", entriesRouter);
-app.use("/api/mood", moodRouter);
-app.use("/api/stats", statsRouter);
-app.use("/api/settings", settingsRouter);
-app.use("/api/drive", driveRouter);
-app.use("/api/export", exportRouter);
-app.use("/api/trash", trashRouter);
-app.use("/api/user", userRouter);
-app.use("/api/warnings", warningsRouter);
-app.use("/api/admin", adminRouter);
-
-app.use(notFoundHandler);
-app.use(errorHandler);
-
-app.listen(env.PORT, () => {
-  startTrashPurgeScheduler();
-  // eslint-disable-next-line no-console
-  console.log(`✨ Luminary API listening on http://localhost:${env.PORT}`);
-});
+/** Long-running Node server (local / traditional hosting). Not used on Vercel. */
+if (!process.env.VERCEL) {
+  app.listen(env.PORT, () => {
+    startTrashPurgeScheduler();
+    // eslint-disable-next-line no-console
+    console.log(`✨ Luminary API listening on http://localhost:${env.PORT}`);
+  });
+}

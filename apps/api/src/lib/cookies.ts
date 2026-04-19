@@ -6,10 +6,11 @@ const REFRESH_COOKIE = "lum_refresh";
 const ADMIN_COOKIE = "lum_admin";
 
 function baseOpts(): CookieOptions {
+  const sameSite = env.COOKIE_SAMESITE;
   return {
     httpOnly: true,
-    secure: isProd,
-    sameSite: "strict",
+    secure: sameSite === "none" ? true : isProd,
+    sameSite,
     domain: env.COOKIE_DOMAIN || undefined,
     path: "/",
   };
