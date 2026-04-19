@@ -53,7 +53,7 @@ export function DayPanel({ date, variant, onClose, isMobile = false }: Props) {
         )}
       >
         <div className="flex items-center gap-2 min-w-0">
-          {onClose && (
+          {onClose && !(isMobile && variant === "page") && (
             <button
               type="button"
               onClick={onClose}
