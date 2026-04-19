@@ -1,5 +1,5 @@
-import { moodFromScore, type MoodValue } from "./mood";
-import type { JournalEntry } from "./types";
+import { moodFromScore, type MoodValue } from "./mood.js";
+import type { JournalEntry } from "./types.js";
 
 /** Rounded average of entry mood scores (1–10) for one day. */
 export function dayMoodFromEntries(entries: Pick<JournalEntry, "mood">[]): MoodValue | null {

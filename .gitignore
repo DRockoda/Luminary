@@ -14,8 +14,7 @@ node_modules/
 .pnp
 .pnp.js
 
-# Build outputs
-dist/
+# Build outputs (do not ignore packages/shared/dist — committed for Vercel cold path)
 build/
 out/
 .next/
@@ -76,6 +75,5 @@ coverage/
 
 # Monorepo / tooling
 .vite/
-packages/shared/dist/
 apps/api/dist/
 apps/web/dist/

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { AVATAR_LIBRARY_IDS } from "./avatarLibrary";
-import { MOOD_TAGS } from "./mood";
+import { AVATAR_LIBRARY_IDS } from "./avatarLibrary.js";
+import { MOOD_TAGS } from "./mood.js";
 
 export const emailSchema = z.string().trim().toLowerCase().email();
 export const passwordSchema = z

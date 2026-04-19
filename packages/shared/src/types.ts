@@ -1,5 +1,5 @@
-import type { MoodTag, MoodValue } from "./mood";
-import type { ThemeKey } from "./colorThemes";
+import type { MoodTag, MoodValue } from "./mood.js";
+import type { ThemeKey } from "./colorThemes.js";
 
 export type EntryType = "audio" | "video" | "text";
 
