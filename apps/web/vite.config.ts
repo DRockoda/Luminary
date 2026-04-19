@@ -82,6 +82,11 @@ export default defineConfig(({ mode }) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Bundle TS sources in dev + prod; Node (Vercel API) resolves `@luminary/shared` via package.json → `dist/`.
+      "@luminary/shared": path.resolve(
+        __dirname,
+        "../../packages/shared/src/index.ts",
+      ),
     },
   },
   server: {

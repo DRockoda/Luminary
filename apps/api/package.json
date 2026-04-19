@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "npx tsc -p ../../packages/shared/tsconfig.json",
     "dev": "tsx watch src/server.ts",
+    "prebuild": "npx tsc -p ../../packages/shared/tsconfig.json",
     "build": "prisma generate && npx tsc -p tsconfig.json",
-    "vercel-build": "prisma generate && npx tsc -p tsconfig.json",
+    "vercel-build": "npx tsc -p ../../packages/shared/tsconfig.json && prisma generate && npx tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
