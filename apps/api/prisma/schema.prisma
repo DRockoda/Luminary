@@ -143,12 +143,16 @@ model UserWarning {
 }
 
 model Feedback {
-  id         String   @id @default(cuid())
-  name       String?
-  email      String
-  message    String
-  isResolved Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  name      String?
+  email     String
+  title     String
+  message   String
+  priority  String   @default("normal")
+  status    String   @default("open")
+  type      String   @default("feedback")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([isResolved, createdAt])
+  @@index([status, createdAt])
 }
