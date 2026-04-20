@@ -49,13 +49,15 @@ router.post("/", authRateLimit, optionalAuth, async (req, res, next) => {
       return res.status(400).json({ error: "Email is required for anonymous feedback" });
     }
 
-    const prefix = `[${(body.type ?? "feedback").toUpperCase()}/${(body.priority ?? "normal").toUpperCase()}]`;
     await prisma.feedback.create({
       data: {
         name,
         email,
-        // Persist new metadata in message body without schema changes.
-        message: `${prefix} ${title}\n\n${message}`.trim(),
+        title,
+        priority: body.priority ?? "normal",
+        type: body.type ?? "feedback",
+        status: "open",
+        message,
       },
     });
     res.status(201).json({ success: true, message: "Feedback submitted successfully." });

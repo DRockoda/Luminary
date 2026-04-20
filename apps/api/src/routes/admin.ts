@@ -106,21 +106,21 @@ async function getDashboardStats() {
     id: string;
     name: string | null;
     email: string | null;
-    isResolved: boolean;
+    status: string;
     createdAt: string;
   }> = [];
   try {
-    unresolvedFeedback = await prisma.feedback.count({ where: { isResolved: false } });
+    unresolvedFeedback = await prisma.feedback.count({ where: { status: "open" } });
     const feedbackRows = await prisma.feedback.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
-      select: { id: true, name: true, email: true, isResolved: true, createdAt: true },
+      select: { id: true, name: true, email: true, status: true, createdAt: true },
     });
     latestFeedback = feedbackRows.map((f) => ({
       id: f.id,
       name: f.name,
       email: f.email,
-      isResolved: f.isResolved,
+      status: f.status,
       createdAt: f.createdAt.toISOString(),
     }));
   } catch {
@@ -588,7 +588,7 @@ router.get("/feedback", async (req, res, next) => {
         name: f.name,
         email: f.email,
         message: f.message,
-        isResolved: f.isResolved,
+        status: f.status,
         createdAt: f.createdAt.toISOString(),
       })),
     });
@@ -597,16 +597,16 @@ router.get("/feedback", async (req, res, next) => {
   }
 });
 
-const patchFeedbackSchema = z.object({ isResolved: z.boolean() });
+const patchFeedbackSchema = z.object({ status: z.enum(["open", "in_progress", "resolved", "closed"]) });
 
 router.patch("/feedback/:id", async (req, res, next) => {
   try {
     const body = patchFeedbackSchema.parse(req.body);
     const updated = await prisma.feedback.update({
       where: { id: req.params.id },
-      data: { isResolved: body.isResolved },
+      data: { status: body.status },
     });
-    res.json({ ok: true, isResolved: updated.isResolved });
+    res.json({ ok: true, status: updated.status });
   } catch (err) {
     next(err);
   }
