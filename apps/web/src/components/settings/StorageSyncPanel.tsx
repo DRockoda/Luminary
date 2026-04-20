@@ -8,7 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Shield, Cloud, HardDrive, Mic, FileText, Video, Trash2 } from "lucide-react";
+import { Loader2, Shield, Cloud, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -263,10 +263,7 @@ export function StorageSyncPanel() {
       {/* Storage card */}
       <section className="settings-section">
         <div className="settings-section-header">
-          <h2 className="settings-section-title">
-            <HardDrive size={13} className="inline mr-1.5" strokeWidth={2.2} />
-            Storage
-          </h2>
+          <h2 className="settings-section-title">Storage</h2>
         </div>
 
         <div className="settings-row settings-row-column">
@@ -289,7 +286,6 @@ export function StorageSyncPanel() {
         <div className="settings-row">
           <span className="settings-row-label">Text entries</span>
           <span className="settings-row-value">
-            <FileText size={12} className="inline mr-1 text-tertiary" />
             {(estimate?.textCount ?? 0).toLocaleString()} ·{" "}
             {formatBytes(estimate?.textBytes ?? 0)}
           </span>
@@ -297,7 +293,6 @@ export function StorageSyncPanel() {
         <div className="settings-row">
           <span className="settings-row-label">Audio entries</span>
           <span className="settings-row-value">
-            <Mic size={12} className="inline mr-1 text-tertiary" />
             {(estimate?.audioCount ?? 0).toLocaleString()} ·{" "}
             {formatBytes(estimate?.audioBytes ?? 0)}
           </span>
@@ -305,7 +300,6 @@ export function StorageSyncPanel() {
         <div className="settings-row">
           <span className="settings-row-label">Video entries</span>
           <span className="settings-row-value">
-            <Video size={12} className="inline mr-1 text-tertiary" />
             {(estimate?.videoCount ?? 0).toLocaleString()} ·{" "}
             {formatBytes(estimate?.videoBytes ?? 0)}
           </span>

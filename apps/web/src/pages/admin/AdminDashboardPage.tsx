@@ -33,11 +33,8 @@ interface RecentSignup {
 interface RecentFeedback {
   id: string;
   name: string | null;
-  email: string | null;
-  title: string;
-  status: "open" | "in-progress" | "resolved" | "closed";
-  priority: "low" | "normal" | "high" | "urgent";
-  type: "feedback" | "bug" | "feature" | "question";
+  email: string;
+  isResolved: boolean;
   createdAt: string;
 }
 interface Overview {
@@ -77,7 +74,6 @@ export default function AdminDashboardPage() {
     data && data.totalUsers > 0
       ? Math.round((data.verifiedUsers / data.totalUsers) * 100)
       : 0;
-  const hasSignupData = (data?.signups ?? []).some((d) => d.count > 0);
 
   return (
     <div>
@@ -166,55 +162,49 @@ export default function AdminDashboardPage() {
           </h2>
         </div>
         <div className="admin-chart-wrap">
-          {hasSignupData ? (
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart
-                data={data?.signups ?? []}
-                margin={{ top: 12, right: 12, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="signupFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="var(--border-subtle)" strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={{ stroke: "var(--border-default)" }}
-                  tickFormatter={(v: string) => v.slice(5)}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={28}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--bg-elevated)",
-                    border: "1px solid var(--border-default)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="var(--accent)"
-                  strokeWidth={2}
-                  fill="url(#signupFill)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="admin-chart-empty">
-              <p className="admin-empty">No signup activity yet. The trend will appear once users register.</p>
-            </div>
-          )}
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart
+              data={data?.signups ?? []}
+              margin={{ top: 12, right: 12, left: 0, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="signupFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="var(--border-subtle)" strokeDasharray="3 3" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={{ stroke: "var(--border-default)" }}
+                tickFormatter={(v: string) => v.slice(5)}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+                width={28}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-default)",
+                  borderRadius: 8,
+                  fontSize: 12,
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="count"
+                stroke="var(--accent)"
+                strokeWidth={2}
+                fill="url(#signupFill)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </section>
 
@@ -281,12 +271,12 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="admin-activity-body">
                     <div className="admin-activity-name">
-                      {f.title}
+                      {f.name || "Anonymous"}
                     </div>
-                    <div className="admin-activity-meta">{f.email || f.name || "Anonymous"}</div>
+                    <div className="admin-activity-meta">{f.email}</div>
                   </div>
                   <div className="admin-activity-side">
-                    {f.status === "resolved" || f.status === "closed" ? (
+                    {f.isResolved ? (
                       <span className="admin-pill admin-pill--success">Resolved</span>
                     ) : (
                       <span className="admin-pill admin-pill--info">Open</span>

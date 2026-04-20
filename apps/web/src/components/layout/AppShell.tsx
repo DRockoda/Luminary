@@ -8,7 +8,6 @@ import {
 import { motion } from "framer-motion";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { TopBanners } from "@/components/layout/TopBanners";
-import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -214,7 +213,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </NavLink>
         ))}
       </nav>
-      <FeedbackButton />
     </div>
   );
 }

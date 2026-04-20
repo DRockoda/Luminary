@@ -64,17 +64,6 @@ export default function App() {
   }, [bootstrap]);
 
   useEffect(() => {
-    const REFRESH_INTERVAL_MS = 6 * 24 * 60 * 60 * 1000;
-    const interval = window.setInterval(() => {
-      const state = useAuthStore.getState();
-      if (state.user) {
-        void state.refreshSession();
-      }
-    }, REFRESH_INTERVAL_MS);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
     if (isAdminRoute) return;
     if (user?.theme) applyColorTheme(user.theme);
   }, [user?.theme, isAdminRoute]);

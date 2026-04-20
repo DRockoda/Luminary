@@ -55,7 +55,7 @@ async function issueTokens(
   const access = signAccessToken(userId);
   const refreshJwt = signRefreshToken(userId, jti);
   const tokenHash = hashToken(refreshJwt);
-  const ttlDays = 90;
+  const ttlDays = 30;
   await prisma.refreshToken.create({
     data: {
       id: jti,
@@ -178,12 +178,8 @@ router.post("/login", authRateLimit, async (req, res, next) => {
       });
       return;
     }
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
-    const tokens = await issueTokens(updatedUser.id, body.rememberMe ?? true, res);
-    res.json({ user: toPublicUser(updatedUser), ...tokens });
+    const tokens = await issueTokens(user.id, body.rememberMe ?? true, res);
+    res.json({ user: toPublicUser(user), ...tokens });
   } catch (err) {
     next(err);
   }
@@ -288,12 +284,8 @@ router.post("/verify-otp", authRateLimit, async (req, res, next) => {
     if (!user) throw badRequest("Invalid code");
     if (user.emailVerified) {
       // Already verified — just log them in.
-      const updatedUser = await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() },
-      });
-      const tokens = await issueTokens(updatedUser.id, body.rememberMe ?? true, res);
-      res.json({ user: toPublicUser(updatedUser), ...tokens });
+      const tokens = await issueTokens(user.id, body.rememberMe ?? true, res);
+      res.json({ user: toPublicUser(user), ...tokens });
       return;
     }
     if (
@@ -310,7 +302,6 @@ router.post("/verify-otp", authRateLimit, async (req, res, next) => {
       where: { id: user.id },
       data: {
         emailVerified: true,
-        lastLoginAt: new Date(),
         emailVerifyToken: null,
         emailVerifyExpires: null,
       },

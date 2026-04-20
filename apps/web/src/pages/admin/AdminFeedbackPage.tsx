@@ -1,39 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Trash2, User, X } from "lucide-react";
+import { Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { adminApi } from "@/lib/adminApi";
 
 interface FeedbackItem {
   id: string;
-  title: string;
-  message: string;
-  type: "feedback" | "bug" | "feature" | "question";
-  priority: "low" | "normal" | "high" | "urgent";
-  status: "open" | "in-progress" | "resolved" | "closed";
-  user: {
-    id: string;
-    displayName: string;
-    email: string;
-    avatarUrl: string | null;
-  } | null;
   name: string | null;
-  email: string | null;
+  email: string;
+  message: string;
+  isResolved: boolean;
   createdAt: string;
 }
-
-const TYPE_ICONS: Record<FeedbackItem["type"], string> = {
-  feedback: "💬",
-  bug: "🐛",
-  feature: "✨",
-  question: "❓",
-};
-const PRIORITY_ICONS: Record<FeedbackItem["priority"], string> = {
-  low: "🟢",
-  normal: "🔵",
-  high: "🟡",
-  urgent: "🔴",
-};
 
 export default function AdminFeedbackPage() {
   const qc = useQueryClient();
@@ -50,9 +28,9 @@ export default function AdminFeedbackPage() {
       ).data.feedback,
   });
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: FeedbackItem["status"] }) => {
-      await adminApi.patch(`/api/admin/feedback/${id}`, { status });
+  const toggle = useMutation({
+    mutationFn: async ({ id, isResolved }: { id: string; isResolved: boolean }) => {
+      await adminApi.patch(`/api/admin/feedback/${id}`, { isResolved });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "feedback"] }),
   });
@@ -73,13 +51,13 @@ export default function AdminFeedbackPage() {
         <div>
           <h1 className="admin-page-title">Feedback</h1>
           <p className="admin-page-subtitle">
-            User-linked feedback and anonymous submissions.
+            All messages submitted from the landing page.
           </p>
         </div>
         <div className="admin-search">
           <Search className="h-3.5 w-3.5 text-tertiary" strokeWidth={2} />
           <Input
-            placeholder="Search by user, email, title, or message…"
+            placeholder="Search by name, email, or message…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="admin-search-input"
@@ -88,67 +66,61 @@ export default function AdminFeedbackPage() {
       </div>
 
       <div className="admin-table-wrap">
-        <div className="admin-feedback-list">
-          {isLoading && <p className="admin-table-empty">Loading…</p>}
-          {!isLoading && (data ?? []).length === 0 && (
-            <p className="admin-table-empty">No feedback yet.</p>
-          )}
-          {(data ?? []).map((item) => (
-            <div
-              key={item.id}
-              className={`admin-feedback-card priority-${item.priority}`}
-              onClick={() => setOpen(item)}
-            >
-              <div className="admin-feedback-card-header">
-                <div className="admin-feedback-badges">
-                  <span className={`admin-badge admin-badge-type-${item.type}`}>
-                    {TYPE_ICONS[item.type]} {item.type}
-                  </span>
-                  <span className={`admin-badge admin-badge-priority-${item.priority}`}>
-                    {PRIORITY_ICONS[item.priority]} {item.priority}
-                  </span>
-                </div>
-                <div className="admin-feedback-meta">
-                  {item.user ? (
-                    <span className="admin-feedback-user">
-                      <User size={11} />
-                      {item.user.displayName}
-                      <span className="admin-feedback-user-email">({item.user.email})</span>
-                    </span>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>From</th>
+              <th>Message</th>
+              <th>Received</th>
+              <th>Status</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && (
+              <tr>
+                <td colSpan={5} className="admin-table-empty">
+                  Loading…
+                </td>
+              </tr>
+            )}
+            {!isLoading && (data ?? []).length === 0 && (
+              <tr>
+                <td colSpan={5} className="admin-table-empty">
+                  No feedback yet.
+                </td>
+              </tr>
+            )}
+            {(data ?? []).map((f) => (
+              <tr key={f.id} onClick={() => setOpen(f)} className="admin-row-clickable">
+                <td>
+                  <div className="admin-user-cell">
+                    <span className="admin-user-name">{f.name || "Anonymous"}</span>
+                    <span className="admin-user-email">{f.email}</span>
+                  </div>
+                </td>
+                <td className="admin-message-preview">{f.message}</td>
+                <td>{new Date(f.createdAt).toLocaleDateString()}</td>
+                <td>
+                  {f.isResolved ? (
+                    <span className="admin-pill admin-pill--success">Resolved</span>
                   ) : (
-                    <span className="admin-feedback-user admin-cell-muted">
-                      {item.name || "Anonymous"} {item.email ? `(${item.email})` : ""}
-                    </span>
+                    <span className="admin-pill admin-pill--info">Open</span>
                   )}
-                  <span className="admin-feedback-date">
-                    {new Date(item.createdAt).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <h4 className="admin-feedback-title">{item.title}</h4>
-              <p className="admin-feedback-message">{item.message}</p>
-
-              <div className="admin-feedback-card-footer" onClick={(e) => e.stopPropagation()}>
-                <select
-                  className="admin-status-select"
-                  value={item.status}
-                  onChange={(e) =>
-                    updateStatus.mutate({
-                      id: item.id,
-                      status: e.target.value as FeedbackItem["status"],
-                    })
-                  }
-                >
-                  <option value="open">Open</option>
-                  <option value="in-progress">In progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                </select>
-              </div>
-            </div>
-          ))}
-        </div>
+                </td>
+                <td className="admin-table-actions" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className="admin-row-link"
+                    onClick={() => toggle.mutate({ id: f.id, isResolved: !f.isResolved })}
+                  >
+                    {f.isResolved ? "Reopen" : "Resolve"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {open && (
@@ -156,8 +128,8 @@ export default function AdminFeedbackPage() {
           <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div>
-                <p className="admin-user-name">{open.user?.displayName || open.name || "Anonymous"}</p>
-                <p className="admin-user-email">{open.user?.email || open.email || "No email"}</p>
+                <p className="admin-user-name">{open.name || "Anonymous"}</p>
+                <p className="admin-user-email">{open.email}</p>
               </div>
               <button
                 type="button"
@@ -168,30 +140,21 @@ export default function AdminFeedbackPage() {
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
-            <h4 className="admin-feedback-title" style={{ padding: "0 20px", marginTop: "16px" }}>
-              {open.title}
-            </h4>
             <p className="admin-modal-body">{open.message}</p>
             <div className="admin-modal-footer">
               <p className="admin-row-sub">
                 {new Date(open.createdAt).toLocaleString()}
               </p>
               <div className="flex gap-2">
-                <select
-                  className="admin-status-select"
-                  value={open.status}
-                  onChange={(e) =>
-                    updateStatus.mutate({
-                      id: open.id,
-                      status: e.target.value as FeedbackItem["status"],
-                    })
+                <button
+                  type="button"
+                  className="admin-row-link"
+                  onClick={() =>
+                    toggle.mutate({ id: open.id, isResolved: !open.isResolved })
                   }
                 >
-                  <option value="open">Open</option>
-                  <option value="in-progress">In progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                </select>
+                  {open.isResolved ? "Reopen" : "Mark resolved"}
+                </button>
                 <button
                   type="button"
                   className="admin-row-link admin-row-link--danger"

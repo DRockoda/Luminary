@@ -29,14 +29,12 @@ model User {
   emailVerifyExpires  DateTime?
   emailLastSentAt     DateTime?
   emailSendCount      Int       @default(0)
-  lastLoginAt         DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
   entries        Entry[]
   moodLogs       MoodLog[]
   warnings       UserWarning[]
-  feedbacks      Feedback[]
   resetTokens    PasswordResetToken[]
 
   @@index([email])
@@ -144,21 +142,12 @@ model UserWarning {
 }
 
 model Feedback {
-  id        String    @id @default(cuid())
-  userId    String?
-  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  name      String?
-  email     String?
-  title     String    @default("")
-  message   String
-  priority  String    @default("normal") // low | normal | high | urgent
-  type      String    @default("feedback") // feedback | bug | feature | question
-  status    String    @default("open") // open | in-progress | resolved | closed
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
+  id         String   @id @default(cuid())
+  name       String?
+  email      String
+  message    String
+  isResolved Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
-  @@index([status, createdAt])
-  @@index([priority, createdAt])
-  @@index([type, createdAt])
-  @@index([userId, createdAt])
+  @@index([isResolved, createdAt])
 }
