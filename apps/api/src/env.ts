@@ -98,7 +98,8 @@ export const env = {
     "dev_admin_jwt_secret_change_me_aaaabbbbccccddddeeeeffff111122223333",
   ),
   ADMIN_JWT_EXPIRES_IN: process.env.ADMIN_JWT_EXPIRES_IN ?? "8h",
-  BREVO_API_KEY: process.env.BREVO_API_KEY ?? "",
+  GMAIL_USER: process.env.GMAIL_USER ?? "",
+  GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD ?? "",
   EMAIL_FROM: process.env.EMAIL_FROM ?? "Luminary <noreply@luminary.local>",
   APP_URL: process.env.APP_URL ?? "http://localhost:5173",
 };

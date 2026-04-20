@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import { env } from "../env.js";
 
 interface SendArgs {
@@ -11,27 +12,25 @@ interface SendArgsWithCode extends SendArgs {
   devCode?: string;
 }
 
-const BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
-
 /**
  * Parses an EMAIL_FROM string like `"Luminary <noreply@example.com>"` or just
- * `"noreply@example.com"` into Brevo's `{ email, name }` shape.
+ * `"noreply@example.com"` into a valid Nodemailer from string.
  */
-function parseFrom(raw: string): { email: string; name?: string } {
+function parseFrom(raw: string): string {
   const m = raw.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/);
   if (m) {
     const name = m[1].replace(/^"|"$/g, "").trim();
-    return { email: m[2].trim(), name: name || undefined };
+    return name ? `${name} <${m[2].trim()}>` : m[2].trim();
   }
-  return { email: raw.trim() };
+  return raw.trim();
 }
 
 async function send({ to, subject, html, devCode }: SendArgsWithCode): Promise<void> {
-  if (!env.BREVO_API_KEY) {
-    // Dev fallback: print prominently so you can grab the code without an API key.
+  if (!env.GMAIL_USER || !env.GMAIL_APP_PASSWORD) {
+    // Dev fallback: print prominently so you can grab the code without SMTP creds.
     if (env.NODE_ENV !== "production") {
       const banner =
-        `\n\n========== [email:dev-stub] (no BREVO_API_KEY) ==========\n` +
+        `\n\n========== [email:dev-stub] (no Gmail SMTP creds) ==========\n` +
         `  to:      ${to}\n` +
         `  subject: ${subject}\n` +
         (devCode ? `  CODE:    ${devCode}\n` : "") +
@@ -41,50 +40,29 @@ async function send({ to, subject, html, devCode }: SendArgsWithCode): Promise<v
       return;
     }
     throw new Error(
-      "BREVO_API_KEY is missing in production, so verification emails cannot be delivered.",
+      "GMAIL_USER or GMAIL_APP_PASSWORD is missing in production, so emails cannot be delivered.",
     );
   }
 
-  const sender = parseFrom(env.EMAIL_FROM);
+  const from = parseFrom(env.EMAIL_FROM);
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: env.GMAIL_USER,
+      pass: env.GMAIL_APP_PASSWORD,
+    },
+  });
 
   try {
-    const res = await fetch(BREVO_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "api-key": env.BREVO_API_KEY,
-        accept: "application/json",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        sender,
-        to: [{ email: to }],
-        subject,
-        htmlContent: html,
-      }),
+    const info = await transporter.sendMail({
+      from,
+      to,
+      subject,
+      html,
     });
-
-    if (!res.ok) {
-      let detail: unknown;
-      try {
-        detail = await res.json();
-      } catch {
-        detail = await res.text().catch(() => "");
-      }
-      // eslint-disable-next-line no-console
-      console.error(
-        `[email] Brevo rejected send -> ${to}\n` +
-          `  from:    ${sender.email}\n` +
-          `  subject: ${subject}\n` +
-          `  status:  ${res.status} ${res.statusText}\n` +
-          `  detail:  ${JSON.stringify(detail)}`,
-      );
-      throw new Error(`Brevo rejected email send (${res.status} ${res.statusText})`);
-    }
-
-    const data = (await res.json().catch(() => ({}))) as { messageId?: string };
     // eslint-disable-next-line no-console
     console.log(
-      `[email] sent OK -> ${to}  (id: ${data.messageId ?? "?"}, subject: "${subject}")`,
+      `[email] sent OK -> ${to}  (id: ${info.messageId ?? "?"}, subject: "${subject}")`,
     );
   } catch (err) {
     // eslint-disable-next-line no-console
