@@ -18,7 +18,7 @@ import {
 } from "../lib/cookies.js";
 import { generateSalt, hashToken } from "../lib/crypto.js";
 import { DEFAULT_SETTINGS } from "../lib/defaults.js";
-import { badRequest, conflict, tooMany, unauthorized } from "../lib/errors.js";
+import { HttpError, badRequest, conflict, tooMany, unauthorized } from "../lib/errors.js";
 import {
   signAccessToken,
   signRefreshToken,
@@ -291,6 +291,11 @@ router.post("/resend-otp", authRateLimit, async (req, res, next) => {
       throw tooMany("Too many verification emails sent. Try again later.");
     }
     const code = newOtp();
+    const prevToken = user.emailVerifyToken;
+    const prevExpires = user.emailVerifyExpires;
+    const prevLastSentAt = user.emailLastSentAt;
+    const prevSendCount = user.emailSendCount;
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -300,7 +305,27 @@ router.post("/resend-otp", authRateLimit, async (req, res, next) => {
         emailSendCount: count + 1,
       },
     });
-    await sendVerificationEmail(user.email, user.displayName, code);
+    try {
+      await sendVerificationEmail(user.email, user.displayName, code);
+    } catch (emailErr) {
+      // Restore previous OTP state so failed delivery doesn't consume the token/counter window.
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerifyToken: prevToken,
+          emailVerifyExpires: prevExpires,
+          emailLastSentAt: prevLastSentAt,
+          emailSendCount: prevSendCount,
+        },
+      });
+      // eslint-disable-next-line no-console
+      console.error("[auth/resend-otp] email send failed", emailErr);
+      throw new HttpError(
+        502,
+        "We couldn't send the verification email right now. Please try again in a moment.",
+        { code: "EMAIL_DELIVERY_FAILED" },
+      );
+    }
     res.json({ ok: true });
   } catch (err) {
     next(err);

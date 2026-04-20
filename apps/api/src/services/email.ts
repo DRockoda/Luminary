@@ -29,15 +29,20 @@ function parseFrom(raw: string): { email: string; name?: string } {
 async function send({ to, subject, html, devCode }: SendArgsWithCode): Promise<void> {
   if (!env.BREVO_API_KEY) {
     // Dev fallback: print prominently so you can grab the code without an API key.
-    const banner =
-      `\n\n========== [email:dev-stub] (no BREVO_API_KEY) ==========\n` +
-      `  to:      ${to}\n` +
-      `  subject: ${subject}\n` +
-      (devCode ? `  CODE:    ${devCode}\n` : "") +
-      `==========================================================\n`;
-    // eslint-disable-next-line no-console
-    console.log(banner);
-    return;
+    if (env.NODE_ENV !== "production") {
+      const banner =
+        `\n\n========== [email:dev-stub] (no BREVO_API_KEY) ==========\n` +
+        `  to:      ${to}\n` +
+        `  subject: ${subject}\n` +
+        (devCode ? `  CODE:    ${devCode}\n` : "") +
+        `==========================================================\n`;
+      // eslint-disable-next-line no-console
+      console.log(banner);
+      return;
+    }
+    throw new Error(
+      "BREVO_API_KEY is missing in production, so verification emails cannot be delivered.",
+    );
   }
 
   const sender = parseFrom(env.EMAIL_FROM);
@@ -73,7 +78,7 @@ async function send({ to, subject, html, devCode }: SendArgsWithCode): Promise<v
           `  status:  ${res.status} ${res.statusText}\n` +
           `  detail:  ${JSON.stringify(detail)}`,
       );
-      return;
+      throw new Error(`Brevo rejected email send (${res.status} ${res.statusText})`);
     }
 
     const data = (await res.json().catch(() => ({}))) as { messageId?: string };
@@ -87,6 +92,7 @@ async function send({ to, subject, html, devCode }: SendArgsWithCode): Promise<v
       `[email] send threw -> ${to}\n  subject: ${subject}\n  error:`,
       err,
     );
+    throw err instanceof Error ? err : new Error("Unknown email provider error");
   }
 }
 
