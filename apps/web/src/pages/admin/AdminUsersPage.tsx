@@ -18,7 +18,7 @@ interface AdminUserRow {
   videoCount: number;
   textCount: number;
   storageBytes: number;
-  currentStreak: number;
+  lastLoginAt: string | null;
 }
 
 function formatBytes(bytes: number): string {
@@ -39,6 +39,55 @@ function formatDate(iso: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function LastLoginCell({ date }: { date: string | null }) {
+  if (!date) {
+    return <span className="admin-last-login-never">Never</span>;
+  }
+
+  const d = new Date(date);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  let relativeLabel = "";
+  if (diffMins < 2) relativeLabel = "Just now";
+  else if (diffMins < 60) relativeLabel = `${diffMins}m ago`;
+  else if (diffHours < 24) relativeLabel = `${diffHours}h ago`;
+  else if (diffDays === 1) relativeLabel = "Yesterday";
+  else if (diffDays < 7) relativeLabel = `${diffDays}d ago`;
+  else {
+    relativeLabel = d.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: diffDays > 365 ? "numeric" : undefined,
+    });
+  }
+
+  const exactTime = d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const dotClass =
+    diffMins < 60 ? "dot-online" : diffDays < 1 ? "dot-recent" : diffDays < 7 ? "dot-week" : "dot-old";
+
+  return (
+    <div className="admin-last-login-cell" title={exactTime}>
+      <span className={`admin-last-login-dot ${dotClass}`} />
+      <div className="admin-last-login-info">
+        <span className="admin-last-login-relative">{relativeLabel}</span>
+        <span className="admin-last-login-exact">{exactTime}</span>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminUsersPage() {
@@ -143,7 +192,7 @@ export default function AdminUsersPage() {
               <th>Verified</th>
               <th>Entries</th>
               <th>Storage</th>
-              <th>Streak</th>
+              <th>Last Login</th>
               <th />
             </tr>
           </thead>
@@ -226,7 +275,7 @@ export default function AdminUsersPage() {
                   </div>
                 </td>
                 <td>{formatBytes(u.storageBytes)}</td>
-                <td>{u.currentStreak} d</td>
+                <td><LastLoginCell date={u.lastLoginAt} /></td>
                 <td className="admin-table-actions">
                   <Link to={`/admin/users/${u.id}`} className="admin-row-link">
                     View

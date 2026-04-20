@@ -29,6 +29,7 @@ model User {
   emailVerifyExpires  DateTime?
   emailLastSentAt     DateTime?
   emailSendCount      Int       @default(0)
+  lastLoginAt         DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

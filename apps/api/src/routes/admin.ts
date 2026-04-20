@@ -215,6 +215,7 @@ router.get("/users", async (req, res, next) => {
         displayName: true,
         emailVerified: true,
         createdAt: true,
+        lastLoginAt: true,
       },
     });
 
@@ -247,6 +248,7 @@ router.get("/users", async (req, res, next) => {
           displayName: u.displayName,
           emailVerified: u.emailVerified,
           createdAt: u.createdAt.toISOString(),
+          lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
           entryCount: total,
           audioCount: counts.audio ?? 0,
           videoCount: counts.video ?? 0,

@@ -178,8 +178,12 @@ router.post("/login", authRateLimit, async (req, res, next) => {
       });
       return;
     }
-    const tokens = await issueTokens(user.id, body.rememberMe ?? true, res);
-    res.json({ user: toPublicUser(user), ...tokens });
+    const loggedInUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+    const tokens = await issueTokens(loggedInUser.id, body.rememberMe ?? true, res);
+    res.json({ user: toPublicUser(loggedInUser), ...tokens });
   } catch (err) {
     next(err);
   }
@@ -284,8 +288,12 @@ router.post("/verify-otp", authRateLimit, async (req, res, next) => {
     if (!user) throw badRequest("Invalid code");
     if (user.emailVerified) {
       // Already verified — just log them in.
-      const tokens = await issueTokens(user.id, body.rememberMe ?? true, res);
-      res.json({ user: toPublicUser(user), ...tokens });
+      const loggedInUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
+      const tokens = await issueTokens(loggedInUser.id, body.rememberMe ?? true, res);
+      res.json({ user: toPublicUser(loggedInUser), ...tokens });
       return;
     }
     if (
@@ -302,6 +310,7 @@ router.post("/verify-otp", authRateLimit, async (req, res, next) => {
       where: { id: user.id },
       data: {
         emailVerified: true,
+        lastLoginAt: new Date(),
         emailVerifyToken: null,
         emailVerifyExpires: null,
       },

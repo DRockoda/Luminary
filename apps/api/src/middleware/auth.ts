@@ -34,3 +34,18 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
     next(unauthorized("Invalid or expired token"));
   }
 }
+
+export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const token = readAccessToken(req);
+  if (!token) {
+    req.userId = undefined;
+    return next();
+  }
+  try {
+    const payload = verifyAccessToken(token);
+    req.userId = payload.sub;
+  } catch {
+    req.userId = undefined;
+  }
+  next();
+}
