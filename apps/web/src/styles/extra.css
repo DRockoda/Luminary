@@ -2997,3 +2997,312 @@
   font-weight: 500;
   color: var(--text-primary);
 }
+
+/* Admin Feedback Page */
+.admin-feedback-page {
+  max-width: 800px;
+}
+
+.admin-page-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.admin-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 150ms;
+  flex-shrink: 0;
+}
+.admin-refresh-btn:hover { background: #f8fafc; }
+.spinning { animation: spin 1s linear infinite; }
+
+.admin-feedback-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0;
+}
+.admin-feedback-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 150ms;
+  border-radius: 0;
+}
+.admin-feedback-tab:hover { color: #0f172a; }
+.admin-feedback-tab.is-active {
+  color: #475569;
+  border-bottom-color: #475569;
+}
+.admin-tab-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-family: var(--font-mono);
+}
+.admin-tab-badge-active {
+  background: #fef3c7;
+  color: #b45309;
+}
+.admin-tab-badge-resolved {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.admin-feedback-loading,
+.admin-feedback-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 24px;
+  color: #94a3b8;
+  text-align: center;
+}
+.admin-feedback-empty p {
+  font-size: 14px;
+  margin: 0;
+}
+.admin-spinner-lg {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #475569;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.admin-spinner-sm {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  opacity: 0.7;
+}
+
+.admin-feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-feedback-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px;
+  transition: box-shadow 150ms;
+}
+.admin-feedback-card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+.admin-feedback-card.is-resolved {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  opacity: 0.85;
+}
+.admin-feedback-card.is-resolved:hover { opacity: 1; }
+
+.admin-feedback-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.admin-feedback-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.admin-feedback-type-badge,
+.admin-feedback-priority-badge,
+.admin-feedback-status-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.admin-feedback-type-badge {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+.admin-feedback-status-badge.status-open {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+.admin-feedback-status-badge.status-in-progress {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+.admin-feedback-status-badge.status-resolved {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+.admin-feedback-status-badge.status-closed {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+.admin-feedback-date {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.admin-feedback-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+.admin-feedback-message {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.65;
+  margin: 0 0 14px;
+  white-space: pre-wrap;
+}
+
+.admin-feedback-user-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 16px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+.admin-feedback-user-email { color: #94a3b8; }
+.admin-feedback-anonymous { color: #94a3b8; font-style: italic; }
+
+.admin-feedback-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 4px;
+}
+.admin-feedback-status-select-wrapper {
+  flex: 1;
+  min-width: 160px;
+}
+.admin-feedback-status-select {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 12px;
+  color: #0f172a;
+  cursor: pointer;
+  outline: none;
+}
+.admin-feedback-status-select:focus { border-color: #475569; }
+
+.admin-feedback-resolve-btn,
+.admin-feedback-reopen-btn,
+.admin-feedback-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 150ms;
+}
+.admin-feedback-resolve-btn {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+.admin-feedback-resolve-btn:hover:not(:disabled) {
+  background: #22c55e;
+  border-color: transparent;
+  color: white;
+}
+.admin-feedback-reopen-btn {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+.admin-feedback-reopen-btn:hover:not(:disabled) {
+  background: #3b82f6;
+  border-color: transparent;
+  color: white;
+}
+.admin-feedback-delete-btn {
+  background: transparent;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+.admin-feedback-delete-btn:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: transparent;
+  color: white;
+}
+.admin-feedback-resolve-btn:disabled,
+.admin-feedback-reopen-btn:disabled,
+.admin-feedback-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .admin-feedback-card { padding: 16px; }
+  .admin-feedback-actions { flex-direction: column; }
+  .admin-feedback-status-select-wrapper { width: 100%; }
+  .admin-feedback-resolve-btn,
+  .admin-feedback-reopen-btn,
+  .admin-feedback-delete-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

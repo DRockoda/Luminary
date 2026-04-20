@@ -110,7 +110,9 @@ async function getDashboardStats() {
     createdAt: string;
   }> = [];
   try {
-    unresolvedFeedback = await prisma.feedback.count({ where: { status: "open" } });
+    unresolvedFeedback = await prisma.feedback.count({
+      where: { status: { in: ["open", "in-progress", "in_progress"] } },
+    });
     const feedbackRows = await prisma.feedback.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
@@ -567,47 +569,77 @@ router.delete("/announcements/:id", async (req, res, next) => {
 
 router.get("/feedback", async (req, res, next) => {
   try {
-    const search = String(req.query.q ?? "").trim().toLowerCase();
-    const where = search
-      ? {
-          OR: [
-            { email: { contains: search } },
-            { name: { contains: search } },
-            { message: { contains: search } },
-          ],
-        }
-      : undefined;
+    const tab = String(req.query.tab ?? "").trim().toLowerCase();
+    const where: {
+      status?: { in: string[] };
+    } = {};
+
+    if (tab === "active") {
+      where.status = { in: ["open", "in-progress", "in_progress"] };
+    } else if (tab === "resolved") {
+      where.status = { in: ["resolved", "closed"] };
+    }
+
     const items = await prisma.feedback.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 200,
     });
+    const [activeCount, resolvedCount] = await Promise.all([
+      prisma.feedback.count({ where: { status: { in: ["open", "in-progress", "in_progress"] } } }),
+      prisma.feedback.count({ where: { status: { in: ["resolved", "closed"] } } }),
+    ]);
+
     res.json({
-      feedback: items.map((f) => ({
+      feedbacks: items.map((f) => ({
         id: f.id,
         name: f.name,
         email: f.email,
+        title: f.title,
+        priority: f.priority,
+        type: f.type,
         message: f.message,
         status: f.status,
         createdAt: f.createdAt.toISOString(),
+        updatedAt: f.updatedAt.toISOString(),
       })),
+      counts: { active: activeCount, resolved: resolvedCount },
     });
   } catch (err) {
     next(err);
   }
 });
 
-const patchFeedbackSchema = z.object({ status: z.enum(["open", "in_progress", "resolved", "closed"]) });
+const patchFeedbackSchema = z.object({
+  status: z.enum(["open", "in-progress", "in_progress", "resolved", "closed"]),
+});
 
-router.patch("/feedback/:id", async (req, res, next) => {
+router.patch("/feedback/:id/status", async (req, res, next) => {
   try {
     const body = patchFeedbackSchema.parse(req.body);
+    const nextStatus = body.status === "in_progress" ? "in-progress" : body.status;
     const updated = await prisma.feedback.update({
       where: { id: req.params.id },
-      data: { status: body.status },
+      data: { status: nextStatus },
     });
-    res.json({ ok: true, status: updated.status });
+    res.json({
+      success: true,
+      feedback: {
+        id: updated.id,
+        name: updated.name,
+        email: updated.email,
+        title: updated.title,
+        priority: updated.priority,
+        type: updated.type,
+        message: updated.message,
+        status: updated.status,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      },
+    });
   } catch (err) {
+    if ((err as { code?: string }).code === "P2025") {
+      return res.status(404).json({ error: "Feedback not found", code: "NOT_FOUND" });
+    }
     next(err);
   }
 });
@@ -615,8 +647,11 @@ router.patch("/feedback/:id", async (req, res, next) => {
 router.delete("/feedback/:id", async (req, res, next) => {
   try {
     await prisma.feedback.delete({ where: { id: req.params.id } });
-    res.json({ ok: true });
+    res.json({ success: true, message: "Feedback deleted." });
   } catch (err) {
+    if ((err as { code?: string }).code === "P2025") {
+      return res.status(404).json({ error: "Feedback not found", code: "NOT_FOUND" });
+    }
     next(err);
   }
 });
