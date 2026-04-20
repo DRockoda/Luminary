@@ -33,8 +33,11 @@ interface RecentSignup {
 interface RecentFeedback {
   id: string;
   name: string | null;
-  email: string;
-  isResolved: boolean;
+  email: string | null;
+  title: string;
+  status: "open" | "in-progress" | "resolved" | "closed";
+  priority: "low" | "normal" | "high" | "urgent";
+  type: "feedback" | "bug" | "feature" | "question";
   createdAt: string;
 }
 interface Overview {
@@ -271,12 +274,12 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="admin-activity-body">
                     <div className="admin-activity-name">
-                      {f.name || "Anonymous"}
+                      {f.title}
                     </div>
-                    <div className="admin-activity-meta">{f.email}</div>
+                    <div className="admin-activity-meta">{f.email || f.name || "Anonymous"}</div>
                   </div>
                   <div className="admin-activity-side">
-                    {f.isResolved ? (
+                    {f.status === "resolved" || f.status === "closed" ? (
                       <span className="admin-pill admin-pill--success">Resolved</span>
                     ) : (
                       <span className="admin-pill admin-pill--info">Open</span>

@@ -73,7 +73,7 @@ router.get("/stats/overview", async (_req, res, next) => {
       prisma.user.count(),
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.entry.count({ where: { deletedAt: null } }),
-      prisma.feedback.count({ where: { isResolved: false } }),
+      prisma.feedback.count({ where: { status: { in: ["open", "in-progress"] } } }),
       prisma.user.count({ where: { createdAt: { gte: startOfToday } } }),
       prisma.entry.count({
         where: { deletedAt: null, createdAt: { gte: startOfToday } },
@@ -127,7 +127,10 @@ router.get("/stats/overview", async (_req, res, next) => {
           id: true,
           name: true,
           email: true,
-          isResolved: true,
+          title: true,
+          status: true,
+          priority: true,
+          type: true,
           createdAt: true,
         },
       }),
@@ -154,7 +157,10 @@ router.get("/stats/overview", async (_req, res, next) => {
         id: f.id,
         name: f.name,
         email: f.email,
-        isResolved: f.isResolved,
+        title: f.title,
+        status: f.status,
+        priority: f.priority,
+        type: f.type,
         createdAt: f.createdAt.toISOString(),
       })),
     });
@@ -187,12 +193,14 @@ router.get("/users", async (req, res, next) => {
         displayName: true,
         emailVerified: true,
         createdAt: true,
+        lastLoginAt: true,
+        driveConnected: true,
       },
     });
 
     const aggregates = await Promise.all(
       users.map(async (u) => {
-        const [byType, sizeAgg, mood] = await Promise.all([
+        const [byType, sizeAgg] = await Promise.all([
           prisma.entry.groupBy({
             by: ["type"],
             where: { userId: u.id, deletedAt: null },
@@ -202,29 +210,23 @@ router.get("/users", async (req, res, next) => {
             where: { userId: u.id, deletedAt: null },
             _sum: { fileSizeBytes: true },
           }),
-          prisma.entry.findMany({
-            where: { userId: u.id, deletedAt: null },
-            select: { date: true },
-            orderBy: { date: "desc" },
-            take: 365,
-          }),
         ]);
         const counts: Record<string, number> = { audio: 0, video: 0, text: 0 };
         for (const row of byType) counts[row.type] = row._count._all;
         const total = (counts.audio ?? 0) + (counts.video ?? 0) + (counts.text ?? 0);
-        const currentStreak = computeCurrentStreak(mood.map((m) => m.date));
         return {
           id: u.id,
           email: u.email,
           displayName: u.displayName,
           emailVerified: u.emailVerified,
           createdAt: u.createdAt.toISOString(),
+          lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
+          driveConnected: u.driveConnected,
           entryCount: total,
           audioCount: counts.audio ?? 0,
           videoCount: counts.video ?? 0,
           textCount: counts.text ?? 0,
           storageBytes: sizeAgg._sum.fileSizeBytes ?? 0,
-          currentStreak,
         };
       }),
     );
@@ -538,28 +540,67 @@ router.delete("/announcements/:id", async (req, res, next) => {
 router.get("/feedback", async (req, res, next) => {
   try {
     const search = String(req.query.q ?? "").trim().toLowerCase();
+    const status = String(req.query.status ?? "").trim();
+    const priority = String(req.query.priority ?? "").trim();
+    const type = String(req.query.type ?? "").trim();
     const where = search
       ? {
           OR: [
-            { email: { contains: search } },
-            { name: { contains: search } },
-            { message: { contains: search } },
+            { email: { contains: search, mode: "insensitive" as const } },
+            { name: { contains: search, mode: "insensitive" as const } },
+            { title: { contains: search, mode: "insensitive" as const } },
+            { message: { contains: search, mode: "insensitive" as const } },
+            {
+              user: {
+                is: {
+                  OR: [
+                    { email: { contains: search, mode: "insensitive" as const } },
+                    { displayName: { contains: search, mode: "insensitive" as const } },
+                  ],
+                },
+              },
+            },
           ],
         }
-      : undefined;
+      : {};
+    if (status) {
+      (where as Record<string, unknown>).status = status;
+    }
+    if (priority) {
+      (where as Record<string, unknown>).priority = priority;
+    }
+    if (type) {
+      (where as Record<string, unknown>).type = type;
+    }
     const items = await prisma.feedback.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
       take: 200,
     });
     res.json({
       feedback: items.map((f) => ({
         id: f.id,
+        userId: f.userId,
+        user: f.user,
         name: f.name,
         email: f.email,
+        title: f.title,
         message: f.message,
-        isResolved: f.isResolved,
+        priority: f.priority,
+        type: f.type,
+        status: f.status,
         createdAt: f.createdAt.toISOString(),
+        updatedAt: f.updatedAt.toISOString(),
       })),
     });
   } catch (err) {
@@ -567,16 +608,18 @@ router.get("/feedback", async (req, res, next) => {
   }
 });
 
-const patchFeedbackSchema = z.object({ isResolved: z.boolean() });
+const patchFeedbackSchema = z.object({
+  status: z.enum(["open", "in-progress", "resolved", "closed"]),
+});
 
 router.patch("/feedback/:id", async (req, res, next) => {
   try {
     const body = patchFeedbackSchema.parse(req.body);
     const updated = await prisma.feedback.update({
       where: { id: req.params.id },
-      data: { isResolved: body.isResolved },
+      data: { status: body.status, updatedAt: new Date() },
     });
-    res.json({ ok: true, isResolved: updated.isResolved });
+    res.json({ ok: true, status: updated.status, updatedAt: updated.updatedAt.toISOString() });
   } catch (err) {
     next(err);
   }

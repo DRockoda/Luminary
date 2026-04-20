@@ -61,15 +61,18 @@ api.interceptors.response.use(
         return api.request(original);
       } catch (e) {
         refreshing = null;
-        clearClientAuthSession();
-        const { useAuthStore } = await import("../store/authStore");
-        useAuthStore.getState().setUser(null);
-        if (typeof window !== "undefined") {
-          const path = window.location.pathname;
-          if (path.startsWith("/admin")) {
-            window.location.assign("/admin");
-          } else if (!path.startsWith("/auth")) {
-            window.location.assign("/auth");
+        const refreshStatus = (e as AxiosError).response?.status;
+        if (refreshStatus === 401) {
+          clearClientAuthSession();
+          const { useAuthStore } = await import("../store/authStore");
+          useAuthStore.getState().setUser(null);
+          if (typeof window !== "undefined") {
+            const path = window.location.pathname;
+            if (path.startsWith("/admin")) {
+              window.location.assign("/admin");
+            } else if (!path.startsWith("/auth")) {
+              window.location.assign("/auth");
+            }
           }
         }
         return Promise.reject(e);

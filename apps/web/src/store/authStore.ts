@@ -51,6 +51,7 @@ interface AuthState {
   verifyOtp: (email: string, code: string, rememberMe?: boolean) => Promise<void>;
   /** Resends the OTP to the email (silent for unknown / already-verified addresses). */
   resendOtp: (email: string) => Promise<void>;
+  refreshSession: () => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -77,9 +78,15 @@ export const useAuthStore = create<AuthState>((set) => ({
           });
           applySessionFromAuthResponse(data);
           set({ user: data.user });
-        } catch {
-          clearClientAuthSession();
-          set({ user: null });
+        } catch (err: unknown) {
+          const status = (err as { response?: { status?: number } })?.response?.status;
+          if (status === 401) {
+            clearClientAuthSession();
+            set({ user: null });
+          } else {
+            // Keep optimistic session on transient network/API failures.
+            set({ user: null });
+          }
         }
       }
     } finally {
@@ -132,6 +139,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   resendOtp: async (email) => {
     await api.post("/api/auth/resend-otp", { email });
+  },
+  refreshSession: async () => {
+    const savedToken = getPersistedRefreshToken();
+    if (!savedToken) return false;
+    try {
+      const { data } = await api.post<AuthTokensResponse>("/api/auth/refresh", {
+        refreshToken: savedToken,
+      });
+      applySessionFromAuthResponse(data);
+      set({ user: data.user });
+      return true;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        clearClientAuthSession();
+        set({ user: null });
+      }
+      return false;
+    }
   },
   logout: async () => {
     const rt = getPersistedRefreshToken();

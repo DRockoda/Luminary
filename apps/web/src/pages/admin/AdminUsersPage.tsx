@@ -1,5 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Search, Users } from "lucide-react";
+import {
+  Check,
+  Cloud,
+  CloudOff,
+  Copy,
+  FileText,
+  Mic,
+  Search,
+  Users,
+  Video,
+} from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -18,7 +28,8 @@ interface AdminUserRow {
   videoCount: number;
   textCount: number;
   storageBytes: number;
-  currentStreak: number;
+  driveConnected: boolean;
+  lastLoginAt: string | null;
 }
 
 function formatBytes(bytes: number): string {
@@ -87,6 +98,20 @@ export default function AdminUsersPage() {
     }
   }
 
+  function formatLastLogin(iso: string | null): string {
+    if (!iso) return "Never";
+    const d = new Date(iso);
+    const now = Date.now();
+    const diffMins = Math.floor((now - d.getTime()) / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffMins < 2) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+
   if (isError) {
     return (
       <div>
@@ -143,7 +168,7 @@ export default function AdminUsersPage() {
               <th>Verified</th>
               <th>Entries</th>
               <th>Storage</th>
-              <th>Streak</th>
+              <th>Last Login</th>
               <th />
             </tr>
           </thead>
@@ -220,13 +245,54 @@ export default function AdminUsersPage() {
                   </label>
                 </td>
                 <td>
-                  <div>{u.entryCount}</div>
-                  <div className="admin-row-sub">
-                    {u.audioCount}a · {u.videoCount}v · {u.textCount}t
+                  <div className="admin-entries-cell">
+                    <span className="admin-entries-total">{u.entryCount}</span>
+                    <div className="admin-entries-breakdown">
+                      <span className="admin-entry-format" title="Audio entries">
+                        <Mic size={10} />
+                        {u.audioCount}
+                      </span>
+                      <span className="admin-entry-format" title="Video entries">
+                        <Video size={10} />
+                        {u.videoCount}
+                      </span>
+                      <span className="admin-entry-format" title="Text entries">
+                        <FileText size={10} />
+                        {u.textCount}
+                      </span>
+                    </div>
                   </div>
                 </td>
-                <td>{formatBytes(u.storageBytes)}</td>
-                <td>{u.currentStreak} d</td>
+                <td>
+                  <div className="admin-storage-cell">
+                    {u.driveConnected ? (
+                      <Cloud size={11} className="admin-storage-icon is-connected" />
+                    ) : (
+                      <CloudOff size={11} className="admin-storage-icon" />
+                    )}
+                    <span className={u.driveConnected ? "" : "admin-cell-muted"}>
+                      {formatBytes(u.storageBytes)}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div className="admin-lastlogin-cell" title={u.lastLoginAt ?? "Never"}>
+                    <span
+                      className={`admin-lastlogin-dot ${
+                        u.lastLoginAt
+                          ? Date.now() - new Date(u.lastLoginAt).getTime() < 24 * 60 * 60 * 1000
+                            ? "is-recent"
+                            : Date.now() - new Date(u.lastLoginAt).getTime() < 7 * 24 * 60 * 60 * 1000
+                              ? "is-week"
+                              : ""
+                          : ""
+                      }`}
+                    />
+                    <span className={u.lastLoginAt ? "admin-lastlogin-label" : "admin-cell-empty"}>
+                      {formatLastLogin(u.lastLoginAt)}
+                    </span>
+                  </div>
+                </td>
                 <td className="admin-table-actions">
                   <Link to={`/admin/users/${u.id}`} className="admin-row-link">
                     View

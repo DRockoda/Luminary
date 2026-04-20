@@ -55,7 +55,7 @@ async function issueTokens(
   const access = signAccessToken(userId);
   const refreshJwt = signRefreshToken(userId, jti);
   const tokenHash = hashToken(refreshJwt);
-  const ttlDays = 30;
+  const ttlDays = 90;
   await prisma.refreshToken.create({
     data: {
       id: jti,
@@ -178,8 +178,12 @@ router.post("/login", authRateLimit, async (req, res, next) => {
       });
       return;
     }
-    const tokens = await issueTokens(user.id, body.rememberMe ?? true, res);
-    res.json({ user: toPublicUser(user), ...tokens });
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+    const tokens = await issueTokens(updatedUser.id, body.rememberMe ?? true, res);
+    res.json({ user: toPublicUser(updatedUser), ...tokens });
   } catch (err) {
     next(err);
   }
