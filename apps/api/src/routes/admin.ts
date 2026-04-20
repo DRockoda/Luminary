@@ -54,26 +54,17 @@ router.use(requireAdmin);
 
 // ─────────────── Stats / Overview ───────────────
 
-router.get("/stats/overview", async (_req, res, next) => {
-  try {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+async function getDashboardStats() {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const [
-      totalUsers,
-      verifiedUsers,
-      totalEntries,
-      unresolvedFeedback,
-      signupsToday,
-      entriesToday,
-      activeWeekRows,
-    ] = await Promise.all([
+  const [totalUsers, verifiedUsers, totalEntries, signupsToday, entriesToday, activeWeekRows] =
+    await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.entry.count({ where: { deletedAt: null } }),
-      prisma.feedback.count({ where: { isResolved: false } }),
       prisma.user.count({ where: { createdAt: { gte: startOfToday } } }),
       prisma.entry.count({
         where: { deletedAt: null, createdAt: { gte: startOfToday } },
@@ -84,80 +75,117 @@ router.get("/stats/overview", async (_req, res, next) => {
         select: { userId: true },
       }),
     ]);
-    const pendingUsers = totalUsers - verifiedUsers;
-    const activeWeek = activeWeekRows.length;
+  const pendingUsers = totalUsers - verifiedUsers;
+  const activeWeek = activeWeekRows.length;
 
-    // 30-day signups (group by date)
-    const since = new Date();
-    since.setDate(since.getDate() - 29);
-    since.setHours(0, 0, 0, 0);
-    const recentUsers = await prisma.user.findMany({
-      where: { createdAt: { gte: since } },
-      select: { createdAt: true },
+  // 30-day signups (group by date)
+  const since = new Date();
+  since.setDate(since.getDate() - 29);
+  since.setHours(0, 0, 0, 0);
+  const recentUsers = await prisma.user.findMany({
+    where: { createdAt: { gte: since } },
+    select: { createdAt: true },
+  });
+  const byDay = new Map<string, number>();
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(since);
+    d.setDate(since.getDate() + i);
+    byDay.set(toIsoDay(d), 0);
+  }
+  for (const u of recentUsers) {
+    const k = toIsoDay(u.createdAt);
+    if (byDay.has(k)) byDay.set(k, (byDay.get(k) ?? 0) + 1);
+  }
+  const signups = Array.from(byDay.entries()).map(([date, count]) => ({ date, count }));
+  const signupsLast30Days = signups.reduce((sum, d) => sum + d.count, 0);
+  const verificationRate = totalUsers > 0 ? Math.round((verifiedUsers / totalUsers) * 100) : 0;
+
+  // Feedback can differ by environment schema/version. Fall back safely.
+  let unresolvedFeedback = 0;
+  let latestFeedback: Array<{
+    id: string;
+    name: string | null;
+    email: string | null;
+    isResolved: boolean;
+    createdAt: string;
+  }> = [];
+  try {
+    unresolvedFeedback = await prisma.feedback.count({ where: { isResolved: false } });
+    const feedbackRows = await prisma.feedback.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: { id: true, name: true, email: true, isResolved: true, createdAt: true },
     });
-    const byDay = new Map<string, number>();
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(since);
-      d.setDate(since.getDate() + i);
-      byDay.set(toIsoDay(d), 0);
-    }
-    for (const u of recentUsers) {
-      const k = toIsoDay(u.createdAt);
-      if (byDay.has(k)) byDay.set(k, (byDay.get(k) ?? 0) + 1);
-    }
-    const signups = Array.from(byDay.entries()).map(([date, count]) => ({ date, count }));
+    latestFeedback = feedbackRows.map((f) => ({
+      id: f.id,
+      name: f.name,
+      email: f.email,
+      isResolved: f.isResolved,
+      createdAt: f.createdAt.toISOString(),
+    }));
+  } catch {
+    unresolvedFeedback = 0;
+    latestFeedback = [];
+  }
 
-    // Recent activity (metadata only — no entry contents)
-    const [latestSignups, latestFeedback] = await Promise.all([
-      prisma.user.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        select: {
-          id: true,
-          email: true,
-          displayName: true,
-          emailVerified: true,
-          createdAt: true,
-        },
-      }),
-      prisma.feedback.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          isResolved: true,
-          createdAt: true,
-        },
-      }),
-    ]);
+  const latestSignups = await prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+      emailVerified: true,
+      createdAt: true,
+    },
+  });
 
-    res.json({
-      totalUsers,
-      verifiedUsers,
-      pendingUsers,
-      totalEntries,
-      unresolvedFeedback,
-      signupsToday,
-      entriesToday,
-      activeWeek,
-      signups,
-      latestSignups: latestSignups.map((u) => ({
-        id: u.id,
-        email: u.email,
-        displayName: u.displayName,
-        emailVerified: u.emailVerified,
-        createdAt: u.createdAt.toISOString(),
-      })),
-      latestFeedback: latestFeedback.map((f) => ({
-        id: f.id,
-        name: f.name,
-        email: f.email,
-        isResolved: f.isResolved,
-        createdAt: f.createdAt.toISOString(),
-      })),
-    });
+  return {
+    totalUsers,
+    verifiedUsers,
+    verificationRate,
+    pendingUsers,
+    totalEntries,
+    unresolvedFeedback,
+    signupsToday,
+    signupsLast30Days,
+    entriesToday,
+    activeWeek,
+    activeThisWeek: activeWeek,
+    signups,
+    dailySignups: signups,
+    latestSignups: latestSignups.map((u) => ({
+      id: u.id,
+      email: u.email,
+      displayName: u.displayName,
+      emailVerified: u.emailVerified,
+      createdAt: u.createdAt.toISOString(),
+    })),
+    latestFeedback,
+    recentSignups: latestSignups.map((u) => ({
+      id: u.id,
+      email: u.email,
+      displayName: u.displayName,
+      emailVerified: u.emailVerified,
+      createdAt: u.createdAt.toISOString(),
+    })),
+    recentFeedback: latestFeedback,
+  };
+}
+
+router.get("/stats/overview", async (_req, res, next) => {
+  try {
+    const stats = await getDashboardStats();
+    res.json(stats);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/stats", async (_req, res, next) => {
+  try {
+    const stats = await getDashboardStats();
+    res.json(stats);
   } catch (err) {
     next(err);
   }

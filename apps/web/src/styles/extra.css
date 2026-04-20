@@ -1232,6 +1232,14 @@
   letter-spacing: 0.06em;
 }
 .admin-chart-wrap { width: 100%; height: 240px; }
+.admin-error-state {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 180px;
+}
 .admin-empty {
   font-size: 13px;
   color: var(--text-tertiary);

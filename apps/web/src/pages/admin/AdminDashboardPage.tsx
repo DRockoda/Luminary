@@ -21,6 +21,7 @@ import {
   YAxis,
 } from "recharts";
 import { adminApi } from "@/lib/adminApi";
+import { apiErrorMessage } from "@/lib/api";
 import { useAdminStore } from "@/store/adminStore";
 
 interface RecentSignup {
@@ -65,15 +66,38 @@ function relativeTime(iso: string): string {
 
 export default function AdminDashboardPage() {
   const admin = useAdminStore((s) => s.admin);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin", "overview"],
-    queryFn: async () => (await adminApi.get<Overview>("/api/admin/stats/overview")).data,
+    queryFn: async () => {
+      try {
+        return (await adminApi.get<Overview>("/api/admin/stats")).data;
+      } catch {
+        return (await adminApi.get<Overview>("/api/admin/stats/overview")).data;
+      }
+    },
   });
 
   const verifiedPct =
     data && data.totalUsers > 0
       ? Math.round((data.verifiedUsers / data.totalUsers) * 100)
       : 0;
+
+  if (isError) {
+    return (
+      <div className="admin-error-state">
+        <p className="admin-empty">
+          Failed to load dashboard data. {apiErrorMessage(error, "Please refresh.")}
+        </p>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => window.location.reload()}
+        >
+          Refresh
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
