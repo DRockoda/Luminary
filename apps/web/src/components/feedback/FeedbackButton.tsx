@@ -2,6 +2,7 @@ import { MessageSquarePlus, Send, X } from "lucide-react";
 import { useState } from "react";
 import { api, apiErrorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { useAuthStore } from "@/store/authStore";
 
 const PRIORITY_OPTIONS = [
   { value: "low", label: "Low", desc: "Nice to have" },
@@ -18,6 +19,7 @@ const TYPE_OPTIONS = [
 ] as const;
 
 export function FeedbackButton() {
+  const user = useAuthStore((s) => s.user);
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -33,6 +35,8 @@ export function FeedbackButton() {
     setIsSubmitting(true);
     try {
       await api.post("/api/feedback", {
+        name: user?.displayName,
+        email: user?.email,
         title: title.trim(),
         message: message.trim(),
         priority,

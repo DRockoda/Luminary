@@ -61,19 +61,11 @@ router.get("/stats/overview", async (_req, res, next) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const [
-      totalUsers,
-      verifiedUsers,
-      totalEntries,
-      unresolvedFeedback,
-      signupsToday,
-      entriesToday,
-      activeWeekRows,
-    ] = await Promise.all([
+    const [totalUsers, verifiedUsers, totalEntries, signupsToday, entriesToday, activeWeekRows] =
+      await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.entry.count({ where: { deletedAt: null } }),
-      prisma.feedback.count({ where: { status: { in: ["open", "in-progress"] } } }),
       prisma.user.count({ where: { createdAt: { gte: startOfToday } } }),
       prisma.entry.count({
         where: { deletedAt: null, createdAt: { gte: startOfToday } },
@@ -84,6 +76,15 @@ router.get("/stats/overview", async (_req, res, next) => {
         select: { userId: true },
       }),
     ]);
+    let unresolvedFeedback = 0;
+    try {
+      unresolvedFeedback = await prisma.feedback.count({
+        where: { status: { in: ["open", "in-progress"] } },
+      });
+    } catch {
+      unresolvedFeedback = 0;
+    }
+
     const pendingUsers = totalUsers - verifiedUsers;
     const activeWeek = activeWeekRows.length;
 
@@ -108,8 +109,7 @@ router.get("/stats/overview", async (_req, res, next) => {
     const signups = Array.from(byDay.entries()).map(([date, count]) => ({ date, count }));
 
     // Recent activity (metadata only — no entry contents)
-    const [latestSignups, latestFeedback] = await Promise.all([
-      prisma.user.findMany({
+    const latestSignups = await prisma.user.findMany({
         orderBy: { createdAt: "desc" },
         take: 5,
         select: {
@@ -119,8 +119,19 @@ router.get("/stats/overview", async (_req, res, next) => {
           emailVerified: true,
           createdAt: true,
         },
-      }),
-      prisma.feedback.findMany({
+      });
+    let latestFeedback: Array<{
+      id: string;
+      name: string | null;
+      email: string | null;
+      title: string;
+      status: string;
+      priority: string;
+      type: string;
+      createdAt: Date;
+    }> = [];
+    try {
+      latestFeedback = await prisma.feedback.findMany({
         orderBy: { createdAt: "desc" },
         take: 5,
         select: {
@@ -133,8 +144,10 @@ router.get("/stats/overview", async (_req, res, next) => {
           type: true,
           createdAt: true,
         },
-      }),
-    ]);
+      });
+    } catch {
+      latestFeedback = [];
+    }
 
     res.json({
       totalUsers,

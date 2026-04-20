@@ -1232,6 +1232,16 @@
   letter-spacing: 0.06em;
 }
 .admin-chart-wrap { width: 100%; height: 240px; }
+.admin-chart-empty {
+  width: 100%;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-surface);
+}
 .admin-empty {
   font-size: 13px;
   color: var(--text-tertiary);
