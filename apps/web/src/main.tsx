@@ -3,6 +3,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
+import { ApiWakeUp } from "./components/ApiWakeUp";
 import "./index.css";
 import "./styles/extra.css";
 import "./styles/polish.css";
@@ -26,7 +27,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <ApiWakeUp>
+          <App />
+        </ApiWakeUp>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

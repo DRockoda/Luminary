@@ -18,7 +18,7 @@ import {
 } from "../lib/cookies.js";
 import { generateSalt, hashToken } from "../lib/crypto.js";
 import { DEFAULT_SETTINGS } from "../lib/defaults.js";
-import { HttpError, badRequest, conflict, tooMany, unauthorized } from "../lib/errors.js";
+import { HttpError, badRequest, tooMany, unauthorized } from "../lib/errors.js";
 import {
   signAccessToken,
   signRefreshToken,
@@ -76,13 +76,51 @@ function newToken() {
 router.post("/signup", authRateLimit, async (req, res, next) => {
   try {
     const body = signupSchema.parse(req.body);
-    const existing = await prisma.user.findUnique({ where: { email: body.email } });
-    if (existing) throw conflict("An account with that email already exists");
+    const normalizedEmail = body.email.toLowerCase();
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existing) {
+      if (!existing.emailVerified) {
+        const code = newOtp();
+        const lastSent = existing.emailLastSentAt?.getTime() ?? 0;
+        const inWindow = Date.now() - lastSent < RESEND_WINDOW_MS;
+        const count = inWindow ? existing.emailSendCount : 0;
+        if (count >= MAX_RESENDS_PER_HOUR) {
+          throw tooMany("Too many verification emails sent. Try again later.");
+        }
+
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            emailVerifyToken: code,
+            emailVerifyExpires: new Date(Date.now() + VERIFY_TTL_MS),
+            emailLastSentAt: new Date(),
+            emailSendCount: count + 1,
+          },
+        });
+
+        sendVerificationEmail(existing.email, existing.displayName, code).catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error("[auth/signup] resend verification email failed", err);
+        });
+
+        res.status(200).json({
+          message:
+            "Account already exists but email is not verified. A new code has been sent.",
+          requiresVerification: true,
+          email: existing.email,
+          resentVerification: true,
+        });
+        return;
+      }
+      throw new HttpError(409, "An account with this email already exists.", {
+        code: "EMAIL_TAKEN",
+      });
+    }
     const passwordHash = await bcrypt.hash(body.password, 12);
     const code = newOtp();
     const user = await prisma.user.create({
       data: {
-        email: body.email,
+        email: normalizedEmail,
         passwordHash,
         displayName: body.displayName?.trim() || body.email.split("@")[0],
         encryptionSalt: generateSalt(16),
@@ -111,7 +149,8 @@ router.post("/signup", authRateLimit, async (req, res, next) => {
 router.post("/login", authRateLimit, async (req, res, next) => {
   try {
     const body = loginSchema.parse(req.body);
-    const user = await prisma.user.findUnique({ where: { email: body.email } });
+    const normalizedEmail = body.email.toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) throw unauthorized("Invalid email or password");
     const ok = await bcrypt.compare(body.password, user.passwordHash);
     if (!ok) throw unauthorized("Invalid email or password");
@@ -132,7 +171,8 @@ router.post("/login", authRateLimit, async (req, res, next) => {
       });
       sendVerificationEmail(user.email, user.displayName, code).catch(() => undefined);
       res.status(403).json({
-        error: "Email verification required",
+        error: "Please verify your email before logging in. A new code has been sent.",
+        code: "EMAIL_NOT_VERIFIED",
         requiresVerification: true,
         email: user.email,
       });

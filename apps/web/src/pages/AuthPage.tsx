@@ -51,12 +51,17 @@ export default function AuthPage() {
         if (password.length < 8)
           throw new Error("Password must be at least 8 characters");
         if (password !== confirm) throw new Error("Passwords don't match");
-        const { email: pendingEmail } = await signup({
+        const { email: pendingEmail, resentVerification } = await signup({
           email,
           password,
           displayName: displayName || undefined,
         });
-        toast.success("Check your email", "We sent you a 6-digit code.");
+        toast.success(
+          "Check your email",
+          resentVerification
+            ? "Your account exists but isn't verified yet. We sent a new 6-digit code."
+            : "We sent you a 6-digit code.",
+        );
         navigate(
           `/auth/verify-email?email=${encodeURIComponent(pendingEmail)}`,
           { replace: true, state: { from } },
@@ -79,6 +84,11 @@ export default function AuthPage() {
         throw err;
       }
     } catch (err) {
+      const e = err as { response?: { data?: { code?: string } } };
+      if (mode === "signup" && e.response?.data?.code === "EMAIL_TAKEN") {
+        toast.error("Account exists", "An account with this email already exists. Try signing in.");
+        return;
+      }
       toast.error(
         mode === "signup" ? "Couldn't create account" : "Couldn't sign in",
         apiErrorMessage(err),

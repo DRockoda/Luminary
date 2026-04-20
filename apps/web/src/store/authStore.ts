@@ -46,7 +46,7 @@ interface AuthState {
     email: string;
     password: string;
     displayName?: string;
-  }) => Promise<{ email: string }>;
+  }) => Promise<{ email: string; resentVerification?: boolean }>;
   /** Verifies a 6-digit OTP. On success, sets the auth user. */
   verifyOtp: (email: string, code: string, rememberMe?: boolean) => Promise<void>;
   /** Resends the OTP to the email (silent for unknown / already-verified addresses). */
@@ -110,12 +110,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   signup: async (input) => {
-    const { data } = await api.post<{ requiresVerification: boolean; email: string }>(
+    const { data } = await api.post<{
+      requiresVerification: boolean;
+      email: string;
+      resentVerification?: boolean;
+    }>(
       "/api/auth/signup",
       input,
     );
     set({ user: null });
-    return { email: data.email };
+    return { email: data.email, resentVerification: data.resentVerification };
   },
   verifyOtp: async (email, code, rememberMe = true) => {
     const { data } = await api.post<AuthTokensResponse>("/api/auth/verify-otp", {

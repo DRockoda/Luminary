@@ -2841,3 +2841,286 @@ body {
   color: #fff;
   border-color: transparent;
 }
+
+/* ── API Wake-up Screen ───────────────────────────────────────────────── */
+.wakeup-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-app, #f8f7ff);
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.wakeup-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.wakeup-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.12;
+  animation: wakeupBlob 10s ease-in-out infinite;
+}
+.wakeup-blob-1 {
+  width: 500px;
+  height: 500px;
+  background: var(--accent, #7c6ff7);
+  top: -150px;
+  left: -150px;
+  animation-delay: 0s;
+}
+.wakeup-blob-2 {
+  width: 350px;
+  height: 350px;
+  background: var(--accent, #7c6ff7);
+  bottom: -100px;
+  right: -100px;
+  animation-delay: 4s;
+}
+.wakeup-blob-3 {
+  width: 250px;
+  height: 250px;
+  background: #a78bfa;
+  top: 40%;
+  left: 60%;
+  animation-delay: 7s;
+}
+
+@keyframes wakeupBlob {
+  0%,
+  100% {
+    transform: scale(1) translate(0, 0);
+  }
+  33% {
+    transform: scale(1.08) translate(15px, -20px);
+  }
+  66% {
+    transform: scale(0.95) translate(-10px, 15px);
+  }
+}
+
+.wakeup-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 48px 40px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  animation: wakeupCardIn 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes wakeupCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wakeup-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+.wakeup-logo-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0a0a0b;
+  letter-spacing: -0.02em;
+}
+
+.wakeup-orb-wrapper {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wakeup-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent, #7c6ff7);
+  opacity: 0;
+  animation: wakeupRing 3s ease-out infinite;
+}
+.wakeup-ring-1 {
+  width: 48px;
+  height: 48px;
+  animation-delay: 0s;
+}
+.wakeup-ring-2 {
+  width: 72px;
+  height: 72px;
+  animation-delay: 0.7s;
+}
+.wakeup-ring-3 {
+  width: 96px;
+  height: 96px;
+  animation-delay: 1.4s;
+}
+
+@keyframes wakeupRing {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+.wakeup-orb {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent, #7c6ff7), #a78bfa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  position: relative;
+  z-index: 1;
+  animation: wakeupSpin 8s linear infinite;
+  box-shadow: 0 4px 20px rgba(124, 111, 247, 0.35);
+}
+
+@keyframes wakeupSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.wakeup-message {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0a0a0b;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+  min-height: 28px;
+}
+
+.wakeup-sub {
+  font-size: 13px;
+  color: #5b5b66;
+  line-height: 1.65;
+  margin: 0 0 24px;
+  min-height: 42px;
+}
+
+.wakeup-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.wakeup-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(124, 111, 247, 0.12);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.wakeup-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent, #7c6ff7), #a78bfa);
+  transition: width 1s ease;
+}
+
+.wakeup-elapsed {
+  font-size: 11px;
+  color: #9b9ba2;
+  font-family: var(--font-mono);
+  min-width: 24px;
+  text-align: right;
+}
+
+.wakeup-retry-btn {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 99px;
+  border: 1px solid var(--accent, #7c6ff7);
+  background: transparent;
+  color: var(--accent, #7c6ff7);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: all 150ms;
+}
+.wakeup-retry-btn:hover {
+  background: var(--accent, #7c6ff7);
+  color: white;
+}
+
+.wakeup-fact {
+  margin-top: 24px;
+  padding: 14px 16px;
+  background: rgba(124, 111, 247, 0.06);
+  border: 1px solid rgba(124, 111, 247, 0.12);
+  border-radius: 12px;
+  text-align: left;
+  animation: factFadeIn 500ms ease;
+}
+
+@keyframes factFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wakeup-fact-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent, #7c6ff7);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.wakeup-fact-text {
+  font-size: 12px;
+  color: #5b5b66;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .wakeup-card {
+    padding: 36px 24px;
+  }
+}
