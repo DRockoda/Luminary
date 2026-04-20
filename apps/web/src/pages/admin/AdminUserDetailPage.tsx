@@ -363,9 +363,20 @@ export default function AdminUserDetailPage() {
             </p>
 
             <div className="admin-delete-confirm-field">
-              <Label htmlFor="confirmEmail">
-                Type <strong>{user.email}</strong> to confirm:
-              </Label>
+              <div className="admin-delete-confirm-label-row">
+                <Label htmlFor="confirmEmail">
+                  Type <strong>{user.email}</strong> to confirm:
+                </Label>
+                <button
+                  type="button"
+                  className={`admin-copy-btn admin-copy-btn-sm ${emailCopied ? "is-copied" : ""}`}
+                  onClick={() => void handleCopyEmail(user.email)}
+                  title={emailCopied ? "Copied!" : "Copy email"}
+                  aria-label="Copy email address"
+                >
+                  {emailCopied ? <Check size={11} /> : <Copy size={11} />}
+                </button>
+              </div>
               <Input
                 id="confirmEmail"
                 type="email"
