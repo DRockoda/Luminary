@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowLeft, Check, Copy, ShieldCheck, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -11,7 +11,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { adminApi } from "@/lib/adminApi";
 import { apiErrorMessage } from "@/lib/api";
@@ -68,7 +67,8 @@ export default function AdminUserDetailPage() {
   const [warnLevel, setWarnLevel] = useState<"info" | "warning" | "danger">("info");
   const [warnMessage, setWarnMessage] = useState("");
   const [confirmEmail, setConfirmEmail] = useState("");
-  const [showDelete, setShowDelete] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
 
   const addWarning = useMutation({
     mutationFn: async () => {
@@ -130,7 +130,25 @@ export default function AdminUserDetailPage() {
   }
 
   const { user, warnings } = data;
+  const activeWarnings = warnings.filter((w) => !w.isDismissed);
   const canDelete = confirmEmail.trim().toLowerCase() === user.email.toLowerCase();
+
+  async function handleCopyEmail(email: string) {
+    try {
+      await navigator.clipboard.writeText(email);
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2000);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = email;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2000);
+    }
+  }
 
   return (
     <div>
@@ -141,7 +159,19 @@ export default function AdminUserDetailPage() {
       <div className="admin-detail-header">
         <div>
           <h1 className="admin-page-title">{user.displayName}</h1>
-          <p className="admin-page-subtitle">{user.email}</p>
+          <div className="admin-user-email-row">
+            <span className="admin-user-email admin-user-email--detail">{user.email}</span>
+            <button
+              type="button"
+              className={`admin-copy-btn ${emailCopied ? "is-copied" : ""}`}
+              onClick={() => void handleCopyEmail(user.email)}
+              title={emailCopied ? "Copied!" : "Copy email"}
+              aria-label="Copy email address"
+            >
+              {emailCopied ? <Check size={13} /> : <Copy size={13} />}
+            </button>
+            {emailCopied && <span className="admin-copy-toast">Copied!</span>}
+          </div>
         </div>
         <div className="admin-verify-control">
           {user.emailVerified ? (
@@ -207,105 +237,180 @@ export default function AdminUserDetailPage() {
         </div>
       </section>
 
-      <section className="admin-section">
-        <h2 className="admin-section-title">Warnings</h2>
-        {warnings.length === 0 ? (
-          <p className="admin-empty">No warnings.</p>
+      <section className="admin-section admin-user-warnings-section">
+        <div className="admin-section-header admin-warnings-header">
+          <h2 className="admin-section-title">
+            <AlertCircle size={14} />
+            User Warnings
+          </h2>
+          <span className="admin-section-count">{activeWarnings.length} active</span>
+        </div>
+        {activeWarnings.length === 0 ? (
+          <div className="admin-empty-warnings">
+            <ShieldCheck size={20} />
+            <span>No active warnings</span>
+          </div>
         ) : (
-          <ul className="admin-warning-list">
-            {warnings.map((w) => (
-              <li key={w.id} className={`admin-warning-row admin-warning-row--${w.level}`}>
-                <div>
-                  <span className={`admin-pill admin-pill--${w.level}`}>{w.level}</span>
-                  <p className="admin-warning-msg">{w.message}</p>
-                  <p className="admin-warning-meta">
-                    {new Date(w.createdAt).toLocaleString()}
-                    {w.isDismissed ? " · dismissed by user" : ""}
-                  </p>
+          <div className="admin-warnings-list">
+            {activeWarnings.map((w) => (
+              <div key={w.id} className={`admin-warning-item admin-warning-${w.level}`}>
+                <div className="admin-warning-item-left">
+                  <span className={`admin-warning-badge admin-warning-badge-${w.level}`}>
+                    {w.level}
+                  </span>
+                  <p className="admin-warning-message">{w.message}</p>
                 </div>
                 <button
                   type="button"
-                  className="admin-row-link admin-row-link--danger"
+                  className="admin-warning-remove-btn"
                   onClick={() => removeWarning.mutate(w.id)}
+                  title="Remove warning"
+                  aria-label="Remove warning"
                 >
-                  Remove
+                  <X size={13} />
                 </button>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
 
         <form
-          className="admin-warning-form"
+          className="admin-add-warning-form"
           onSubmit={(e) => {
             e.preventDefault();
             if (warnMessage.trim().length < 2) return;
             addWarning.mutate();
           }}
         >
-          <div className="admin-warning-form-row">
-            <select
-              className="settings-select"
-              value={warnLevel}
-              onChange={(e) =>
-                setWarnLevel(e.target.value as "info" | "warning" | "danger")
-              }
-            >
-              <option value="info">Info</option>
-              <option value="warning">Warning</option>
-              <option value="danger">Danger</option>
-            </select>
-          </div>
+          <select
+            className="admin-select"
+            value={warnLevel}
+            onChange={(e) =>
+              setWarnLevel(e.target.value as "info" | "warning" | "danger")
+            }
+          >
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="danger">Danger</option>
+          </select>
           <Textarea
+            className="admin-textarea"
             placeholder="Message shown to the user at the top of their app…"
             value={warnMessage}
             onChange={(e) => setWarnMessage(e.target.value)}
             rows={3}
           />
-          <Button type="submit" disabled={addWarning.isPending || !warnMessage.trim()}>
+          <button
+            type="submit"
+            className="admin-btn-warning-submit"
+            disabled={addWarning.isPending || !warnMessage.trim()}
+          >
             Add warning
-          </Button>
+          </button>
         </form>
       </section>
 
-      <section className="admin-section admin-section--danger">
-        <h2 className="admin-section-title">Danger zone</h2>
-        {!showDelete ? (
-          <Button
-            variant="destructive"
-            onClick={() => setShowDelete(true)}
-            className="gap-2"
-          >
-            <Trash2 className="h-4 w-4" /> Delete account
-          </Button>
-        ) : (
-          <div className="admin-danger-confirm">
-            <p className="admin-empty" style={{ marginBottom: 12 }}>
-              Type the user's email <strong>{user.email}</strong> to confirm permanent deletion.
+      <section className="admin-danger-zone">
+        <div className="admin-danger-zone-header">
+          <div className="admin-danger-zone-icon">
+            <AlertTriangle size={16} />
+          </div>
+          <div>
+            <h3 className="admin-danger-zone-title">Danger Zone</h3>
+            <p className="admin-danger-zone-desc">
+              These actions are permanent and cannot be undone.
             </p>
-            <div className="space-y-1.5" style={{ marginBottom: 12 }}>
-              <Label htmlFor="confirmEmail">Email</Label>
+          </div>
+        </div>
+
+        <div className="admin-danger-action-row">
+          <div className="admin-danger-action-info">
+            <p className="admin-danger-action-title">Delete this account</p>
+            <p className="admin-danger-action-desc">
+              Permanently deletes the user's account, all journal entries, and removes
+              access. Their Google Drive files are not deleted.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="admin-delete-trigger-btn"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 size={14} />
+            Delete account
+          </button>
+        </div>
+      </section>
+
+      {showDeleteConfirm && (
+        <div
+          className="admin-delete-modal-overlay"
+          onClick={() => setShowDeleteConfirm(false)}
+          role="presentation"
+        >
+          <div className="admin-delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-delete-modal-header">
+              <div className="admin-delete-modal-icon">
+                <Trash2 size={20} />
+              </div>
+              <h3>Delete account permanently?</h3>
+            </div>
+
+            <p className="admin-delete-modal-warning">
+              This will permanently delete <strong>{user.displayName}</strong>&apos;s
+              account and all their journal entries. This action <strong>cannot be
+              undone</strong>.
+            </p>
+
+            <div className="admin-delete-confirm-field">
+              <Label htmlFor="confirmEmail">
+                Type <strong>{user.email}</strong> to confirm:
+              </Label>
               <Input
                 id="confirmEmail"
+                type="email"
                 value={confirmEmail}
                 onChange={(e) => setConfirmEmail(e.target.value)}
+                placeholder={user.email}
+                autoComplete="off"
+                spellCheck={false}
               />
             </div>
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={() => setShowDelete(false)}>
+
+            <div className="admin-delete-modal-actions">
+              <button
+                type="button"
+                className="admin-btn-secondary"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setConfirmEmail("");
+                }}
+                disabled={deleteUser.isPending}
+              >
                 Cancel
-              </Button>
-              <Button
-                variant="destructive"
+              </button>
+              <button
+                type="button"
+                className="admin-btn-delete"
                 disabled={!canDelete || deleteUser.isPending}
                 onClick={() => deleteUser.mutate()}
               >
-                Delete account permanently
-              </Button>
+                {deleteUser.isPending ? (
+                  <>
+                    <span className="admin-spinner" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    Delete permanently
+                  </>
+                )}
+              </button>
             </div>
           </div>
-        )}
-      </section>
+        </div>
+      )}
     </div>
   );
 }

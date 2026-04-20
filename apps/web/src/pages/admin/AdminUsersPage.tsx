@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Users } from "lucide-react";
+import { Check, Copy, Search, Users } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ function formatDate(iso: string): string {
 export default function AdminUsersPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["admin", "users", q],
     queryFn: async () =>
@@ -68,6 +69,23 @@ export default function AdminUsersPage() {
     },
     onError: (err) => toast.error("Couldn't update verification", apiErrorMessage(err)),
   });
+
+  async function handleCopyEmail(email: string) {
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopiedEmail(email);
+      setTimeout(() => setCopiedEmail((curr) => (curr === email ? null : curr)), 2000);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = email;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopiedEmail(email);
+      setTimeout(() => setCopiedEmail((curr) => (curr === email ? null : curr)), 2000);
+    }
+  }
 
   if (isError) {
     return (
@@ -159,7 +177,18 @@ export default function AdminUsersPage() {
                 <td>
                   <div className="admin-user-cell">
                     <span className="admin-user-name">{u.displayName}</span>
-                    <span className="admin-user-email">{u.email}</span>
+                    <div className="admin-table-email-cell">
+                      <span className="admin-user-email">{u.email}</span>
+                      <button
+                        type="button"
+                        className={`admin-copy-btn admin-copy-btn-sm ${copiedEmail === u.email ? "is-copied" : ""}`}
+                        onClick={() => void handleCopyEmail(u.email)}
+                        title={copiedEmail === u.email ? "Copied!" : "Copy email"}
+                        aria-label="Copy email address"
+                      >
+                        {copiedEmail === u.email ? <Check size={11} /> : <Copy size={11} />}
+                      </button>
+                    </div>
                   </div>
                 </td>
                 <td>{formatDate(u.createdAt)}</td>
